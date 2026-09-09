@@ -153,10 +153,10 @@ Purpose: link the private repo and prove reads work.
 Layout:
 
 - Card "GitHub connection" with status in the title row.
-- Four inputs in two columns: Owner (placeholder octocat), Repo (placeholder docs), Branch (placeholder main), Docs root (placeholder docs).
+- Four inputs in two columns: Owner (placeholder octocat), Repo (placeholder docs), Branch (placeholder main), Subfolder (optional, placeholder "whole repo").
 - Note under fields, 12px muted: "Token and webhook secret come from env (GITHUB_TOKEN, GITHUB_WEBHOOK_SECRET). They never appear here."
 - Buttons row: primary "Save", outline "Test connection". Loading state "Working..." disables both.
-- Results list under buttons: one row per check with green check or red cross icon, name medium, message regular. The three checks read: token identity, branch plus short sha, Markdown file count in docs root.
+- Results list under buttons: one row per check with green check or red cross icon, name medium, message regular. The three checks read: token identity, branch plus short sha, Markdown file count in the repo.
 - Error text in destructive under the buttons on save failure.
 
 ## Page 8: Projects (`/admin/projects`)

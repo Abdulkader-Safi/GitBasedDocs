@@ -97,7 +97,7 @@ export const repoConnections = sqliteTable("repo_connections", {
   owner: text("owner").notNull(),
   repo: text("repo").notNull(),
   branch: text("branch").notNull().default("main"),
-  docsRoot: text("docs_root").notNull().default("docs"),
+  docsRoot: text("docs_root").notNull().default(""), // "" = whole repo; set only to narrow
   status: text("status").notNull().default("connected"),
   lastSyncedSha: text("last_synced_sha"),
   lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
@@ -121,6 +121,7 @@ export const docPages = sqliteTable(
     blobSha: text("blob_sha"),
     headSha: text("head_sha"),
     status: text("status").notNull().default("active"),
+    isDraft: integer("is_draft").notNull().default(0),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [uniqueIndex("doc_pages_project_path_uidx").on(t.projectId, t.path)]

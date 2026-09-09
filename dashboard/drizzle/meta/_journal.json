@@ -15,6 +15,13 @@
       "when": 1788958039386,
       "tag": "0001_lazy_jimmy_woo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788967775558,
+      "tag": "0002_majestic_ink",
+      "breakpoints": true
     }
   ]
 }

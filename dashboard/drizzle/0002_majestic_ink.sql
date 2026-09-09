@@ -1,0 +1,1 @@
+ALTER TABLE `doc_pages` ADD `is_draft` integer DEFAULT 0 NOT NULL;

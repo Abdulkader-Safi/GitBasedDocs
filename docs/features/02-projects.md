@@ -32,7 +32,7 @@ Group docs per client or product so each reader sees only their own work. A proj
 ## Rules
 
 - Path must exist in the last synced tree before save, else block with "folder not found in repo".
-- Path must sit under the connection `docsRoot`. Reject `../` or absolute paths.
+- Path is a folder inside the repo, or empty for the repo root. Reject `../` or absolute paths. When `docsRoot` is set it also has to sit under it.
 - Slug pattern: `^[a-z0-9-]{2,48}$`.
 
 ## Out of scope for v1

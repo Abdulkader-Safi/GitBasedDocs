@@ -28,7 +28,9 @@ export async function saveConnection(input: ConnectionInput) {
   const owner = input.owner.trim()
   const repo = input.repo.trim().replace(/\.git$/, "")
   const branch = input.branch.trim() || "main"
-  const docsRoot = input.docsRoot.trim().replace(/^\/+|\/+$/g, "") || "docs"
+  // The connected repo is the docs repo, so the whole repo is in scope by
+  // default. Empty docsRoot means repo root; set it only to narrow.
+  const docsRoot = input.docsRoot.trim().replace(/^\/+|\/+$/g, "")
   if (!owner || !repo) throw new Error("Owner and repo are required")
   const db = await getDb()
   const now = new Date()
@@ -76,13 +78,25 @@ export async function testConnection(input: ConnectionInput) {
       )) as { object: { sha: string } }
       return `Branch ${branch} at ${ref.object.sha.slice(0, 7)}`
     }),
+    // Count Markdown anywhere in scope, not just at the top level, because
+    // most docs repos keep every page in nested folders.
     check("docs", async () => {
-      const items = (await gh(
-        `/repos/${owner}/${repo}/contents/${docsRoot}?ref=${branch}`,
-      )) as Array<{ name: string }>
-      const md = items.filter((i) => i.name.endsWith(".md") || i.name.endsWith(".mdx"))
-      if (!md.length) throw new GitHubError(404, "No Markdown files in docs root")
-      return `${md.length} Markdown file(s) in ${docsRoot}`
+      const root = (docsRoot ?? "").replace(/^\/+|\/+$/g, "")
+      const ref = (await gh(
+        `/repos/${owner}/${repo}/git/refs/heads/${branch}`,
+      )) as { object: { sha: string } }
+      const tree = (await gh(
+        `/repos/${owner}/${repo}/git/trees/${ref.object.sha}?recursive=1`,
+      )) as { tree: Array<{ path: string; type: string }> }
+      const md = (tree.tree ?? []).filter(
+        (t) =>
+          t.type === "blob" &&
+          /\.mdx?$/.test(t.path) &&
+          (!root || t.path === root || t.path.startsWith(`${root}/`)),
+      )
+      const where = root ? root : "the repo"
+      if (!md.length) throw new GitHubError(404, `No Markdown files in ${where}`)
+      return `${md.length} Markdown file(s) in ${where}`
     }),
   ])
   const db = await getDb()

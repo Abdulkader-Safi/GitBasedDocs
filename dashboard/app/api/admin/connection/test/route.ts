@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     owner: String(body.owner ?? ""),
     repo: String(body.repo ?? ""),
     branch: String(body.branch ?? "main"),
-    docsRoot: String(body.docsRoot ?? "docs"),
+    docsRoot: String(body.docsRoot ?? ""),
   })
   return NextResponse.json({ results })
 }

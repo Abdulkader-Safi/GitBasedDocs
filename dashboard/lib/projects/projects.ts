@@ -28,16 +28,20 @@ function cleanPath(p: string): string {
   return p.trim().replace(/^\/+|\/+$/g, "")
 }
 
-// Path must sit under the connection docs root, with no escapes.
+// An empty path means the repo root, which is valid: one repo can hold one
+// project's docs. Anything else must stay inside the repo.
 function checkPathEscapes(repoPath: string) {
-  if (!repoPath || repoPath.includes("..") || repoPath.startsWith("/")) {
-    throw new Error("Path must be a folder under the docs root, no ../ allowed")
+  if (repoPath.includes("..") || repoPath.startsWith("/")) {
+    throw new Error("Path must be a folder inside the repo, no ../ allowed")
   }
 }
 
+// docsRoot is an optional narrowing filter. Empty means the whole repo.
 function checkPathShape(repoPath: string, docsRoot: string) {
-  if (repoPath !== docsRoot && !repoPath.startsWith(`${docsRoot}/`)) {
-    throw new Error(`Path must sit under ${docsRoot}`)
+  const root = (docsRoot ?? "").replace(/^\/+|\/+$/g, "")
+  if (!root) return
+  if (repoPath !== root && !repoPath.startsWith(`${root}/`)) {
+    throw new Error(`Path must sit under ${root}`)
   }
 }
 
@@ -48,6 +52,8 @@ async function checkPathExists(
   branch: string,
   repoPath: string,
 ) {
+  // The repo root always exists, nothing to check.
+  if (!repoPath) return
   try {
     await gh(`/repos/${owner}/${repo}/contents/${repoPath}?ref=${branch}`)
   } catch (e) {

@@ -17,7 +17,7 @@ export function ConnectionForm() {
   const [owner, setOwner] = useState("")
   const [repo, setRepo] = useState("")
   const [branch, setBranch] = useState("main")
-  const [docsRoot, setDocsRoot] = useState("docs")
+  const [docsRoot, setDocsRoot] = useState("")
   const [status, setStatus] = useState<string | null>(null)
   const [checks, setChecks] = useState<Check[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -100,8 +100,8 @@ export function ConnectionForm() {
             <Input id="branch" value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="main" />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="docsRoot">Docs root</Label>
-            <Input id="docsRoot" value={docsRoot} onChange={(e) => setDocsRoot(e.target.value)} placeholder="docs" />
+            <Label htmlFor="docsRoot">Subfolder (optional)</Label>
+            <Input id="docsRoot" value={docsRoot} onChange={(e) => setDocsRoot(e.target.value)} placeholder="whole repo" />
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
