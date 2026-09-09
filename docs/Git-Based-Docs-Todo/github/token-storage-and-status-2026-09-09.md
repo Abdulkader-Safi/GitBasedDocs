@@ -1,11 +1,11 @@
 ---
 id: "token-storage-and-status-2026-09-09"
-status: "todo"
+status: "done"
 priority: "medium"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-09T11:36:01.000Z"
+modified: "2026-09-09T14:01:22.000Z"
 labels: ["github", "security"]
 order: 6
 ---
@@ -18,5 +18,7 @@ Spec: `docs/features/03-github-connection.md`, `docs/research/02-github-access-f
 
 Done when:
 
-- [ ] Saved token renders masked in UI and API responses.
-- [ ] Revoked token flips status to error and shows an admin banner.
+- [x] Saved token renders masked in UI and API responses.
+- [x] Revoked token flips status to error and shows an admin banner.
+
+Notes: token lives only in env, the form never fetches it. Error banner renders in the admin layout while status is error.
