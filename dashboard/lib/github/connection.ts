@@ -36,11 +36,34 @@ export async function saveConnection(input: ConnectionInput) {
   const now = new Date()
   const existing = await getConnection()
   if (existing) {
+    // Pointing at a different repo or branch invalidates everything we knew.
+    // Keeping the old head sha would let the next sync compare against a
+    // foreign commit, and keeping the old status would claim a repo we have
+    // never actually read is connected.
+    const retargeted =
+      existing.owner !== owner ||
+      existing.repo !== repo ||
+      existing.branch !== branch
+
+    const patch = {
+      owner,
+      repo,
+      branch,
+      docsRoot,
+      updatedAt: now,
+      ...(retargeted
+        ? { lastSyncedSha: null, lastCheckedAt: null, lastError: null }
+        : {}),
+    }
     await db
       .update(repoConnections)
-      .set({ owner, repo, branch, docsRoot, updatedAt: now })
+      .set(patch)
       .where(eq(repoConnections.id, existing.id))
-    return { ...existing, owner, repo, branch, docsRoot }
+    const [row] = await db
+      .select()
+      .from(repoConnections)
+      .where(eq(repoConnections.id, existing.id))
+    return row
   }
   const id = randomUUID()
   await db.insert(repoConnections).values({
