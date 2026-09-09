@@ -12,7 +12,7 @@ Let known people sign in with email and password. Keep strangers out. Give admin
 ## Behavior
 
 - Sign in page at `/login` with email and password fields, shadcn form and error states.
-- Credentials provider in Auth.js. Passwords hashed at rest. Compare with constant time check.
+- Credentials provider in next-auth. Passwords hashed at rest. Compare with constant time check.
 - First account is seeded by env (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) on first boot, then forced to change password on first login.
 - Sessions stored in DB. Cookie is httpOnly, secure in prod, sameSite lax.
 - Sign out clears the session row and redirects to `/login`.
@@ -21,7 +21,7 @@ Let known people sign in with email and password. Keep strangers out. Give admin
 
 ## Data
 
-- Uses Auth.js tables: `users`, `accounts`, `sessions`, `verificationTokens`.
+- Uses next-auth tables: `users`, `accounts`, `sessions`, `verificationTokens`.
 - User row adds `role` (admin, editor, viewer) and `isActive`. Inactive users fail sign in with the same generic message.
 
 ## UI
@@ -32,7 +32,7 @@ Let known people sign in with email and password. Keep strangers out. Give admin
 ## Edge cases
 
 - Inactive user with valid password: same error as wrong password.
-- Deleted user with live cookie: `auth()` returns null, middleware redirects to `/login`.
+- Deleted user with live cookie: `getServerSession` returns null, middleware redirects to `/login`.
 - DB down at login: 500 page with retry, no stack trace to client.
 
 ## Out of scope for v1

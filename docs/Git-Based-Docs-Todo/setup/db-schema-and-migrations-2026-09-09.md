@@ -1,6 +1,6 @@
 ---
 id: "db-schema-and-migrations-2026-09-09"
-status: "todo"
+status: "in-progress"
 priority: "high"
 assignee: "safi"
 dueDate: null

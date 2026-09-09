@@ -11,7 +11,7 @@ This folder holds planning notes for the private docs system. Code lives in `das
 ## Current stack
 
 - Next.js 16 in `dashboard/`, shadcn UI installed, Tailwind v4, theme provider present.
-- Planned: Auth.js (next-auth v5), Drizzle ORM, SQLite for local self host, Postgres for deploy.
+- Planned: next-auth v4, Drizzle ORM, SQLite for local self host, Postgres for deploy.
 - Content source: one private GitHub repo, read through the GitHub API at request time. No GitHub Actions in the content repo.
 
 ## Reading order

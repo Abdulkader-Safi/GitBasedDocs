@@ -22,7 +22,7 @@ Verify order: `lint` -> `typecheck` -> `build`. There is no test runner; `build`
 - Path alias is `@/*` mapped to `dashboard/*` (not `src/*`): `@/components`, `@/lib`, `@/app`.
 - Add UI via `npx shadcn@latest add <component>` into `components/ui`. Style is `base-lyra`, RTL enabled, icons are Remix (`@remixicon/react`), theme via `components/theme-provider.tsx`.
 - Before writing Next.js code, read the relevant guide in `dashboard/node_modules/next/dist/docs/` (per `dashboard/AGENTS.md`). Next 16 breaks from training-data defaults.
-- Planned stack (not yet installed): Auth.js v5, Drizzle ORM (SQLite local, Postgres deploy), GitHub API content reads. Check `docs/research/05-auth-data-and-multitenancy.md` before adding any of these so driver and schema choices stay shared.
+- Planned stack (not yet installed): next-auth v4, Drizzle ORM (SQLite local, Postgres deploy), GitHub API content reads. Check `docs/research/05-auth-data-and-multitenancy.md` before adding any of these so driver and schema choices stay shared.
 
 ## Task board (MD Kanban)
 

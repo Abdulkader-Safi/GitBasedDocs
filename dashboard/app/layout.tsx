@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, JetBrains_Mono, Merriweather } from "next/font/google"
+import { Geist, JetBrains_Mono, Merriweather } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"

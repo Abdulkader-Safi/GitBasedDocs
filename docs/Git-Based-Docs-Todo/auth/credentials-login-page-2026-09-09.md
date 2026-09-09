@@ -12,7 +12,7 @@ order: 3
 
 # Credentials login page
 
-Build `/login` with Auth.js v5 credentials provider: shadcn Card, email plus password, show toggle, generic error on failure. DB sessions, httpOnly cookie. Rate limit 5 tries per 15 min per IP and per email.
+Build `/login` with next-auth v4 credentials provider: shadcn Card, email plus password, show toggle, generic error on failure. DB sessions, httpOnly cookie. Rate limit 5 tries per 15 min per IP and per email.
 
 Spec: `docs/features/01-authentication.md`.
 

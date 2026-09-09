@@ -2,7 +2,7 @@
 
 ## Login shape
 
-Auth.js v5 (next-auth v5) with the Drizzle adapter. One `auth.ts` config, `handlers` for API routes, `auth()` helper for server components and route handlers.
+next-auth v4 with a small custom Drizzle adapter (the `@auth/*` adapter line targets v5 only). One `[...nextauth]` route, `getServerSession` in server components and route handlers, `withAuth` middleware for page protection.
 
 Start with two providers:
 
@@ -23,7 +23,7 @@ Role lives on the user row. Project access lives in a join table so one user can
 
 ## Tables (Drizzle, shared for SQLite and Postgres)
 
-Auth.js needs: `users`, `accounts`, `sessions`, `verificationTokens`.
+next-auth needs: `users`, `accounts`, `sessions`, `verificationTokens`.
 
 App adds:
 
