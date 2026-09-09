@@ -28,7 +28,12 @@ export async function gh(path: string, token?: string) {
       throw new GitHubError(401, "Token rejected. Check Contents read scope and repo access.")
     }
     if (res.status === 404) {
-      throw new GitHubError(404, "Not found with this token. Check owner, repo, and branch.")
+      // A private repo the token cannot reach answers 404, not 403, so this
+      // message has to cover both "wrong name" and "no access granted".
+      throw new GitHubError(
+        404,
+        "Not found with this token. Check owner, repo, and branch. If the repo is private, grant the token access to it with Contents: read.",
+      )
     }
     if (res.status === 403 || res.status === 429) {
       throw new GitHubError(res.status, "Rate limited. Wait a minute and retry.")

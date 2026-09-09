@@ -9,11 +9,16 @@ import { DrizzleAdapter } from "./adapter"
 import { checkRateLimit } from "./rate-limit"
 import { ensureSeeded } from "./seed"
 
+const REMEMBER_MAX_AGE = 30 * 24 * 3600
+const SHORT_SESSION_MS = 12 * 3600 * 1000
+
 export const authOptions: NextAuthOptions = {
   adapter: DrizzleAdapter(),
   // v4 supports Credentials only with JWT. Revoke still works because
   // the session callback rechecks the user row on every call.
-  session: { strategy: "jwt", maxAge: 7 * 24 * 3600, updateAge: 24 * 3600 },
+  // "Keep me logged in" picks between these two windows. The cookie itself
+  // carries the long one; the session callback enforces the short one.
+  session: { strategy: "jwt", maxAge: REMEMBER_MAX_AGE, updateAge: 24 * 3600 },
   pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
@@ -22,6 +27,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        remember: { label: "Keep me logged in", type: "checkbox" },
       },
       async authorize(credentials, req) {
         const email = credentials?.email?.toLowerCase().trim() ?? ""
@@ -49,13 +55,18 @@ export const authOptions: NextAuthOptions = {
           name: row.name,
           email: row.email,
           image: row.image,
+          remember: credentials?.remember === "true",
         }
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+        token.remember = (user as { remember?: boolean }).remember === true
+        token.loginAt = Date.now()
+      }
       return token
     },
     async session({ session, token }) {
@@ -66,8 +77,15 @@ export const authOptions: NextAuthOptions = {
         session.user.role = "viewer"
         session.user.mustChangePassword = false
         session.user.active = false
+        // Without "keep me logged in" the session dies after 12 hours even
+        // though the cookie would live longer.
+        const remember = token.remember === true
+        const loginAt = typeof token.loginAt === "number" ? token.loginAt : 0
+        const lapsed =
+          !remember && loginAt > 0 && Date.now() - loginAt > SHORT_SESSION_MS
+
         const id = token.id as string | undefined
-        if (id) {
+        if (id && !lapsed) {
           const db = await getDb()
           const [row] = await db.select().from(users).where(eq(users.id, id))
           if (row && row.isActive) {
