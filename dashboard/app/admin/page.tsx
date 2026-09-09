@@ -18,6 +18,16 @@ export default async function AdminPage() {
           </Link>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Projects</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Link href="/admin/projects" className="text-sm underline">
+            Manage projects
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   )
 }
