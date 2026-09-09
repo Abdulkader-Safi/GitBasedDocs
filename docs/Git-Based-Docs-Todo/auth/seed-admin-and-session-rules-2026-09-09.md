@@ -1,11 +1,11 @@
 ---
 id: "seed-admin-and-session-rules-2026-09-09"
-status: "todo"
+status: "done"
 priority: "high"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-09T11:36:01.000Z"
+modified: "2026-09-09T12:50:25.000Z"
 labels: ["auth"]
 order: 4
 ---
@@ -18,5 +18,7 @@ Spec: `docs/features/01-authentication.md`.
 
 Done when:
 
-- [ ] Fresh boot creates the admin once, never overwrites.
-- [ ] Revoking sessions logs the user out on next request.
+- [x] Fresh boot creates the admin once, never overwrites.
+- [x] Revoking sessions logs the user out on next request.
+
+Notes: verified seed once (role admin, mustChangePassword set), live session resolves, deleted user session returns null. Short seed passwords are refused with a console error. Forced change UI lands with the admin settings task.

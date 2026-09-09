@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string
       role: string
       mustChangePassword: boolean
+      active: boolean
     } & DefaultSession["user"]
   }
 }

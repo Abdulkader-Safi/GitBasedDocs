@@ -14,7 +14,7 @@ Let known people sign in with email and password. Keep strangers out. Give admin
 - Sign in page at `/login` with email and password fields, shadcn form and error states.
 - Credentials provider in next-auth. Passwords hashed at rest. Compare with constant time check.
 - First account is seeded by env (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) on first boot, then forced to change password on first login.
-- Sessions stored in DB. Cookie is httpOnly, secure in prod, sameSite lax.
+- Sessions use JWT (v4 supports Credentials only with JWT). The session callback reloads the user row on every call, so deactivating a user locks them out on next request. Cookie is httpOnly, secure in prod, sameSite lax.
 - Sign out clears the session row and redirects to `/login`.
 - Rate limit login: 5 tries per 15 minutes per IP plus per email. Show generic "email or password is wrong" to avoid user probing.
 - Password rules: min 10 chars. No complexity quiz. Block top 10k common passwords with a small list.

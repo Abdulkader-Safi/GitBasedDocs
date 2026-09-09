@@ -11,7 +11,9 @@ import { ensureSeeded } from "./seed"
 
 export const authOptions: NextAuthOptions = {
   adapter: DrizzleAdapter(),
-  session: { strategy: "database" },
+  // v4 supports Credentials only with JWT. Revoke still works because
+  // the session callback rechecks the user row on every call.
+  session: { strategy: "jwt", maxAge: 7 * 24 * 3600, updateAge: 24 * 3600 },
   pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
@@ -52,13 +54,29 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      if (user) token.id = user.id
+      return token
+    },
+    async session({ session, token }) {
+      // Row is rechecked on every call, so deactivating a user locks
+      // them out on next request even though the token itself is JWT.
       if (session.user) {
-        session.user.id = user.id
-        const db = await getDb()
-        const [row] = await db.select().from(users).where(eq(users.id, user.id))
-        session.user.role = row?.role ?? "viewer"
-        session.user.mustChangePassword = Boolean(row?.mustChangePassword)
+        session.user.id = ""
+        session.user.role = "viewer"
+        session.user.mustChangePassword = false
+        session.user.active = false
+        const id = token.id as string | undefined
+        if (id) {
+          const db = await getDb()
+          const [row] = await db.select().from(users).where(eq(users.id, id))
+          if (row && row.isActive) {
+            session.user.id = row.id
+            session.user.role = row.role
+            session.user.mustChangePassword = Boolean(row.mustChangePassword)
+            session.user.active = true
+          }
+        }
       }
       return session
     },
