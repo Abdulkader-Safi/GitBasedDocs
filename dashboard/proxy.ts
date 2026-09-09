@@ -8,6 +8,9 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
+    // GitHub sends no cookie. This route authenticates with an HMAC
+    // signature instead, so the cookie gate must not redirect it.
+    pathname.startsWith("/api/webhooks/") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
   ) {
