@@ -17,6 +17,7 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash"),
   role: text("role").notNull().default("viewer"),
   isActive: integer("is_active").notNull().default(1),
+  mustChangePassword: integer("must_change_password").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 })

@@ -8,6 +8,13 @@
       "when": 1788957489889,
       "tag": "0000_brainy_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788958039386,
+      "tag": "0001_lazy_jimmy_woo",
+      "breakpoints": true
     }
   ]
 }
