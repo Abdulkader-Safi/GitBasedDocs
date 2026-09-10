@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 
 import { requireAdminApi } from "@/lib/auth/admin"
-import { createProject, listProjects } from "@/lib/projects/projects"
+import { createProject, listProjectsWithCounts } from "@/lib/projects/projects"
 
 export async function GET() {
   const { error } = await requireAdminApi()
   if (error) return error
-  const rows = await listProjects()
+  const rows = await listProjectsWithCounts()
   return NextResponse.json({ projects: rows })
 }
 

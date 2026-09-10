@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm"
+import { eq, ne, sql } from "drizzle-orm"
 import { randomUUID } from "crypto"
 
 import { getDb } from "@/lib/db"
-import { projects } from "@/lib/db/schema"
+import { docPages, projectMembers, projects } from "@/lib/db/schema"
 import { GitHubError, gh } from "@/lib/github/client"
 import { getConnection } from "@/lib/github/connection"
 
@@ -135,4 +135,29 @@ export async function updateProject(
   }
   const [row] = await db.select().from(projects).where(eq(projects.id, id))
   return row
+}
+
+// Admin list: every project, archived included, with live page and member
+// counts. Drafts count here because admins can see them.
+export async function listProjectsWithCounts() {
+  const db = await getDb()
+  const [rows, pageCounts, memberCounts] = await Promise.all([
+    db.select().from(projects).orderBy(projects.name),
+    db
+      .select({ projectId: docPages.projectId, n: sql<number>`count(*)` })
+      .from(docPages)
+      .where(ne(docPages.status, "deleted"))
+      .groupBy(docPages.projectId),
+    db
+      .select({ projectId: projectMembers.projectId, n: sql<number>`count(*)` })
+      .from(projectMembers)
+      .groupBy(projectMembers.projectId),
+  ])
+  const pages = new Map(pageCounts.map((c) => [c.projectId, Number(c.n)]))
+  const members = new Map(memberCounts.map((c) => [c.projectId, Number(c.n)]))
+  return rows.map((p) => ({
+    ...p,
+    pageCount: pages.get(p.id) ?? 0,
+    memberCount: members.get(p.id) ?? 0,
+  }))
 }
