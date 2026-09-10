@@ -67,3 +67,10 @@ assert.equal(pageSlug("", "guides/auth.md"), "guides/auth")
 assert.equal(pageSlug("", "index.md"), "")
 
 console.log("sync helpers ok")
+
+// an untitled index.md takes its folder's name, never "Index"
+assert.equal(titleFrom({}, "", "docs/index.md"), "Docs")
+assert.equal(titleFrom({}, "", "guides/getting-started/index.md"), "Getting started")
+assert.equal(titleFrom({}, "# Real", "docs/index.md"), "Real", "a heading still wins")
+assert.equal(titleFrom({}, "", "index.md"), "Index", "the repo root index has no folder to borrow")
+console.log("index title checks ok")

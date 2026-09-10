@@ -58,8 +58,13 @@ export function titleFrom(
   if (typeof fm === "string" && fm.trim()) return fm.trim()
   const h1 = body.match(/^#\s+(.+)$/m)
   if (h1) return h1[1].trim()
-  const base = (filePath.split("/").pop() ?? filePath).replace(MD, "")
-  const words = base.replace(/[-_]+/g, " ").trim()
+  const parts = filePath.split("/")
+  const base = (parts[parts.length - 1] ?? filePath).replace(MD, "")
+  // An untitled index.md stands in for its folder, so it takes the folder's
+  // name. Otherwise every folder with an index shows up as "Index".
+  const name =
+    base.toLowerCase() === "index" && parts.length > 1 ? parts[parts.length - 2] : base
+  const words = name.replace(/[-_]+/g, " ").trim()
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 

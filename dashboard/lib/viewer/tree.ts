@@ -20,30 +20,29 @@ export interface TreeFolder {
   path: string
   title: string
   order: number
-  // The folder's own index page, when it has one. Clicking the folder label
-  // opens it.
+  // The folder's own index page, when it has one. Clicking the folder opens
+  // it. It never renames the folder: the label is always the real folder
+  // name, the way Obsidian shows it.
   indexSlug: string | null
+  // The index page's own title, used for prev and next.
+  indexTitle: string | null
   children: TreeNode[]
 }
 
 export type TreeNode = TreePage | TreeFolder
-
-export function humanize(segment: string): string {
-  const words = segment.replace(/[-_]+/g, " ").trim()
-  return words.charAt(0).toUpperCase() + words.slice(1)
-}
 
 function byOrder(a: TreeNode, b: TreeNode) {
   if (a.order !== b.order) return a.order - b.order
   return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" })
 }
 
-// Folders come from path segments. A page whose slug equals a folder path
-// (guides/index.md becomes "guides") names and orders that folder instead of
-// sitting inside it. The project index ("") stays a normal top-level page.
+// Folders come from path segments and keep their real names. A page whose
+// slug equals a folder path (guides/index.md becomes "guides") becomes that
+// folder's landing, opened by clicking the folder, and can set its order.
+// The project index ("") stays a normal top-level page.
 export function buildTree(pages: TreeInput[]): TreeNode[] {
   const root: TreeFolder = {
-    kind: "folder", path: "", title: "", order: 0, indexSlug: null, children: [],
+    kind: "folder", path: "", title: "", order: 0, indexSlug: null, indexTitle: null, children: [],
   }
   const folders = new Map<string, TreeFolder>([["", root]])
 
@@ -55,9 +54,10 @@ export function buildTree(pages: TreeInput[]): TreeNode[] {
     const folder: TreeFolder = {
       kind: "folder",
       path,
-      title: humanize(path.slice(path.lastIndexOf("/") + 1)),
+      title: path.slice(path.lastIndexOf("/") + 1),
       order: 999,
       indexSlug: null,
+      indexTitle: null,
       children: [],
     }
     parent.children.push(folder)
@@ -77,9 +77,9 @@ export function buildTree(pages: TreeInput[]): TreeNode[] {
   for (const page of pages) {
     if (isFolderIndex(page.slug)) {
       const folder = folderFor(page.slug)
-      folder.title = page.title
       folder.order = page.sortOrder
       folder.indexSlug = page.slug
+      folder.indexTitle = page.title
       continue
     }
     const parentPath = page.slug.includes("/")
@@ -108,7 +108,7 @@ export function flatten(nodes: TreeNode[]): { slug: string; title: string }[] {
   for (const n of nodes) {
     if (n.kind === "page") out.push({ slug: n.slug, title: n.title })
     else {
-      if (n.indexSlug !== null) out.push({ slug: n.indexSlug, title: n.title })
+      if (n.indexSlug !== null) out.push({ slug: n.indexSlug, title: n.indexTitle ?? n.title })
       out.push(...flatten(n.children))
     }
   }

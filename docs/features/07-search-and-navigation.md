@@ -7,7 +7,7 @@ Help readers find a page fast inside their own project without seeing other proj
 ## Navigation
 
 - Sidebar built from the index: folders as groups, pages sorted by `order` then name.
-- `_meta.json` or `index.md` header in a folder sets group label and order. Without it, folder name is the label.
+- Folders always show their real name, as in Obsidian. A folder's `index.md` becomes the page that opens when you click the folder, and its `order` sets the folder's position. It never renames the folder.
 - Breadcrumb shows project name plus folder trail plus page title.
 - Prev and next links at page bottom follow sidebar order.
 

@@ -5,7 +5,7 @@ priority: "medium"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-10T09:20:00.000Z"
+modified: "2026-09-10T09:55:00.000Z"
 labels: ["viewer", "ui"]
 order: 15
 ---
@@ -30,3 +30,11 @@ Below `md` the sidebar moves into a drawer (`components/viewer/mobile-nav.tsx`),
 Verified in the browser at 1512: active row highlighted on `/p/docs/Welcome` and `/p/docs/docs/test`, breadcrumb and prev/next correct. At 408 px the drawer opens with the full tree and closes itself after tapping a page.
 
 Not browser-verified yet: the copy button click, because the vault has no fenced code. The markup is covered by the renderer check.
+
+Follow up (2026-09-10): with `docs/index.md` in the vault, the sidebar showed the folder as "Index" instead of "docs". Two causes, both fixed:
+
+- An index page renamed its folder to the page's title. Folders now always keep their real name, the way Obsidian shows them; the index only makes the folder clickable and can set its order. Prev and next still use the index page's own title. `features/07` updated to match.
+- An untitled `index.md` fell back to the file name, so its title was "Index". It now takes its folder's name (`docs/index.md` becomes "Docs"); a heading or frontmatter title still wins.
+
+Verified against the vault: sidebar reads `docs` (opens the index) > `Test`, then `Welcome`, matching Obsidian.
+

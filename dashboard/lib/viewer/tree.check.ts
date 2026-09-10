@@ -20,17 +20,19 @@ const tree = buildTree(pages)
 assert.deepEqual(tree.map((n) => n.kind === "page" ? n.slug : `[${n.path}]`),
   ["", "install", "[guides]", "[api]", "page 9", "page 10"])
 
-// a folder index names and orders its folder, and is not a child of it
+// a folder index opens and orders its folder, is not a child of it, and never
+// renames it: the label stays the real folder name, as in Obsidian
 const guides = tree.find((n) => n.kind === "folder" && n.path === "guides")
 assert.ok(guides && guides.kind === "folder")
-assert.equal(guides.title, "Guides")
+assert.equal(guides.title, "guides", "a titled index must not rename its folder")
 assert.equal(guides.indexSlug, "guides")
+assert.equal(guides.indexTitle, "Guides")
 assert.deepEqual(guides.children.map((c) => c.kind === "page" && c.slug), ["guides/auth", "guides/webhooks"])
 
-// a folder with no index gets a humanised name and no link
+// a folder with no index keeps its name and has no link
 const api = tree.find((n) => n.kind === "folder" && n.path === "api")
 assert.ok(api && api.kind === "folder")
-assert.equal(api.title, "Api")
+assert.equal(api.title, "api")
 assert.equal(api.indexSlug, null)
 // equal order falls back to title
 assert.deepEqual(api.children.map((c) => c.kind === "page" && c.slug), ["api/errors", "api/rate-limits"])
@@ -49,8 +51,21 @@ assert.equal(neighbours(tree, "page 10").next, null)
 assert.deepEqual(neighbours(tree, "missing"), { prev: null, next: null })
 
 // breadcrumb trail uses folder titles and links folders that have an index
-assert.deepEqual(trail(tree, "guides/auth"), [{ title: "Guides", slug: "guides" }])
-assert.deepEqual(trail(tree, "api/errors"), [{ title: "Api", slug: null }])
+assert.deepEqual(trail(tree, "guides/auth"), [{ title: "guides", slug: "guides" }])
+assert.deepEqual(trail(tree, "api/errors"), [{ title: "api", slug: null }])
+
+// the user's vault: docs/index.md (untitled) plus docs/test.md and Welcome.md.
+// The folder must read "docs", open the index, and hold only "Test".
+const vault = buildTree([
+  { slug: "docs", title: "Docs", sortOrder: 999 },
+  { slug: "docs/test", title: "Test", sortOrder: 999 },
+  { slug: "Welcome", title: "Welcome", sortOrder: 999 },
+])
+const docsFolder = vault[0]
+assert.ok(docsFolder.kind === "folder")
+assert.equal(docsFolder.title, "docs")
+assert.equal(docsFolder.indexSlug, "docs")
+assert.deepEqual(docsFolder.children.map((c) => c.kind === "page" && c.slug), ["docs/test"])
 assert.deepEqual(trail(tree, "install"), [])
 
 // folders on the active path open
