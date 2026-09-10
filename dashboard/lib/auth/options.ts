@@ -50,6 +50,7 @@ export const authOptions: NextAuthOptions = {
         if (!row || !row.isActive || !row.passwordHash) return null
         const ok = await compare(password, row.passwordHash)
         if (!ok) return null
+        await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, row.id))
         return {
           id: row.id,
           name: row.name,
@@ -88,7 +89,12 @@ export const authOptions: NextAuthOptions = {
         if (id && !lapsed) {
           const db = await getDb()
           const [row] = await db.select().from(users).where(eq(users.id, id))
-          if (row && row.isActive) {
+          // "Revoke sessions" stamps the user row; any token issued before
+          // that stamp stops working here, on its very next request. Tokens
+          // from before loginAt existed count as issued at 0, so they go too.
+          const revoked =
+            row?.sessionsRevokedAt != null && loginAt < row.sessionsRevokedAt.getTime()
+          if (row && row.isActive && !revoked) {
             session.user.id = row.id
             session.user.role = row.role
             session.user.mustChangePassword = Boolean(row.mustChangePassword)

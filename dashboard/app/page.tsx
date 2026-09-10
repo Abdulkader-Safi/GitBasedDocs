@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
 
-import { auth } from "@/lib/auth/session"
+import { requireSession } from "@/lib/auth/session"
 import { listVisibleProjects } from "@/lib/projects/reader"
 import { plural, relativeTime } from "@/lib/format"
 import { TopBar } from "@/components/chrome/top-bar"
@@ -14,8 +13,7 @@ import {
 } from "@/components/icons"
 
 export default async function HomePage() {
-  const session = await auth()
-  if (!session) redirect("/login")
+  const session = await requireSession()
 
   const list = await listVisibleProjects(session.user.id, session.user.role)
 

@@ -4,11 +4,12 @@ import { requireAdmin } from "@/lib/auth/admin"
 import { getConnection } from "@/lib/github/connection"
 import { listProjects } from "@/lib/projects/projects"
 import { deniedInLastDays } from "@/lib/access/log"
+import { listUsers } from "@/lib/users/users"
 import { intervalFromEnv } from "@/lib/sync/schedule"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatusBadge, type ConnectionStatus } from "@/components/ui/status-badge"
 import { SyncPanel } from "@/components/admin/sync-panel"
-import { IconArrowRight, IconFolder, IconRepo, IconShieldCheck } from "@/components/icons"
+import { IconArrowRight, IconFolder, IconRepo, IconShieldCheck, IconUser } from "@/components/icons"
 
 function AdminCard({
   href,
@@ -46,11 +47,13 @@ function AdminCard({
 
 export default async function AdminPage() {
   await requireAdmin()
-  const [connection, projects, denied] = await Promise.all([
+  const [connection, projects, denied, people] = await Promise.all([
     getConnection(),
     listProjects(),
     deniedInLastDays(7),
+    listUsers(),
   ])
+  const admins = people.filter((u) => u.role === "admin" && u.isActive).length
 
   const active = projects.filter((p) => p.isActive).length
   const archived = projects.length - active
@@ -95,6 +98,12 @@ export default async function AdminPage() {
           icon={<IconFolder size={17} />}
           title="Projects"
           meta={`${active} active · ${archived} archived`}
+        />
+        <AdminCard
+          href="/admin/users"
+          icon={<IconUser size={17} />}
+          title="Users"
+          meta={`${people.length} ${people.length === 1 ? "account" : "accounts"} · ${admins} ${admins === 1 ? "admin" : "admins"}`}
         />
         <AdminCard
           href="/admin/access"

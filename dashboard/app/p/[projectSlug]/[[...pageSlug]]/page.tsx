@@ -72,6 +72,7 @@ export default async function DocPage({
   const highlight = ((await searchParams).q ?? "").slice(0, 200)
   const doc = await loadDoc(projectSlug, pageSlug)
   if (!doc.session) redirect("/login")
+  if (doc.session.user.mustChangePassword) redirect("/account/password")
   const userId = doc.session.user.id
   const requested = `/p/${projectSlug}${pageSlug.length ? `/${pageSlug.join("/")}` : ""}`
   // No such project, archived, or not a member: all the same 404, and a

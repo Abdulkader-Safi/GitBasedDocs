@@ -18,6 +18,10 @@ export const users = sqliteTable("users", {
   role: text("role").notNull().default("viewer"),
   isActive: integer("is_active").notNull().default(1),
   mustChangePassword: integer("must_change_password").notNull().default(0),
+  lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
+  // Sessions are JWTs, so there is nothing server side to delete. Any token
+  // issued before this moment is refused by the session callback.
+  sessionsRevokedAt: integer("sessions_revoked_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 })

@@ -64,10 +64,14 @@ export function TopBar({
         )}
         <ThemeToggle />
         {email && (
-          <span className="hidden items-center gap-1.5 font-mono text-[13px] text-muted-foreground md:flex">
+          <Link
+            href="/account/password"
+            title="Change password"
+            className="hidden items-center gap-1.5 font-mono text-[13px] text-muted-foreground hover:text-foreground md:flex"
+          >
             <IconUser size={14} />
             {email}
-          </span>
+          </Link>
         )}
         <SignOutButton />
       </div>

@@ -1,11 +1,11 @@
 ---
 id: "admin-settings-and-deploy-notes-2026-09-09"
-status: "todo"
+status: "in-progress"
 priority: "medium"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-09T11:36:01.000Z"
+modified: "2026-09-10T09:00:00.000Z"
 labels: ["admin", "deploy"]
 order: 18
 ---
@@ -17,6 +17,14 @@ Settings screen: users table (role, active flag, project count, last login; acti
 Spec: `docs/features/08-admin-settings.md`.
 
 Deploy: SQLite file volume plus `AUTH_SECRET`, `DATABASE_URL`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` locally. Postgres `DATABASE_URL` plus `drizzle-kit migrate` and `AUTH_URL` in deploy.
+
+Progress:
+
+- [x] GitHub link panel: done earlier on `/admin/connection` plus the sync panel on `/admin`.
+- [x] Users at `/admin/users`: table with role, status, project count and last login. Create, edit (name, role, projects), deactivate, reset password and revoke sessions. Admin-set passwords force a change on next login (`/account/password`). Reset and revoke end every existing session on its next request (`users.sessions_revoked_at`, migration 0005). Guards: nobody can demote or deactivate themselves, and the last active admin stays. Password rule: 10 to 200 characters, not on the common list, not the email name. Check: `lib/users/users.check.ts`. Verified over HTTP with minted sessions.
+- [ ] Last 50 sync runs with expandable errors.
+- [ ] Danger zone with typed confirm and audit lines.
+- [ ] Deploy notes.
 
 Done when:
 
