@@ -19,6 +19,7 @@ import { MobileNav } from "@/components/viewer/mobile-nav"
 import { ProjectSwitcher } from "@/components/viewer/project-switcher"
 import { Article } from "@/components/viewer/article"
 import { SearchPalette } from "@/components/viewer/search-palette"
+import { Chip } from "@/components/ui/status-badge"
 import { IconArrowLeft, IconArrowRight, IconClock, IconWarning } from "@/components/icons"
 
 const WARN_BYTES = 1024 * 1024
@@ -200,9 +201,7 @@ export default async function DocPage({
           {page.title}
         </h1>
         {page.isDraft === 1 && (
-          <span className="bg-status-warning px-2 py-0.5 font-mono text-[11px] font-medium tracking-[0.08em] text-background uppercase">
-            Draft
-          </span>
+          <Chip tone="warning">Draft</Chip>
         )}
       </div>
 

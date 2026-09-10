@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/admin"
 import { accessFilterOptions, listAccessEvents, type AccessFilter } from "@/lib/access/log"
 import { relativeTime } from "@/lib/format"
 import { PageHeader } from "@/components/ui/page-header"
+import { Chip } from "@/components/ui/status-badge"
 import { buttonVariants } from "@/components/ui/button"
 import { IconCheck, IconClose, IconClock, IconUser } from "@/components/icons"
 
@@ -141,14 +142,9 @@ export default async function AccessLogPage({ searchParams }: { searchParams: Se
 
 function Result({ allowed }: { allowed: boolean }) {
   return (
-    <span
-      className={cn(
-        "inline-flex w-fit items-center gap-1 border px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.08em] uppercase",
-        allowed ? "border-status-success text-status-success" : "border-destructive text-destructive",
-      )}
-    >
+    <Chip tone={allowed ? "success" : "danger"}>
       {allowed ? <IconCheck size={11} /> : <IconClose size={11} />}
       {allowed ? "Allowed" : "Denied"}
-    </span>
+    </Chip>
   )
 }

@@ -59,7 +59,7 @@ export function TopBar({
           <Link
             href="/admin"
             aria-label="Admin"
-            className="flex h-8 shrink-0 items-center gap-1.5 px-2 font-mono text-[13px] text-muted-foreground hover:text-foreground"
+            className="flex h-8 shrink-0 items-center gap-1.5 px-2 font-mono text-[13px] pointer-coarse:h-10 text-muted-foreground hover:text-foreground"
           >
             <IconSettings size={14} />
             <span className="hidden sm:inline">Admin</span>

@@ -2,6 +2,7 @@ import { cn } from "cn"
 
 import type { syncLogs } from "@/lib/db/schema"
 import { plural, relativeTime } from "@/lib/format"
+import { Chip } from "@/components/ui/status-badge"
 import { IconBranch, IconCheck, IconChevronRight, IconClock, IconWarning } from "@/components/icons"
 
 const COLS = "grid grid-cols-[140px_90px_140px_100px_120px_80px_1fr] items-center gap-4 px-4"
@@ -18,17 +19,17 @@ function splitLine(line: string) {
 function Status({ run, issues }: { run: Run; issues: number }) {
   const [label, tone, Icon] =
     run.status === "error"
-      ? ["Failed", "border-destructive text-destructive", IconWarning]
+      ? (["Failed", "danger", IconWarning] as const)
       : issues
-        ? [plural(issues, "warning"), "border-status-warning text-status-warning", IconWarning]
+        ? ([plural(issues, "warning"), "warning", IconWarning] as const)
         : run.status === "unchanged"
-          ? ["No change", "border-border text-muted-foreground", IconCheck]
-          : ["Synced", "border-status-success text-status-success", IconCheck]
+          ? (["No change", "neutral", IconCheck] as const)
+          : (["Synced", "success", IconCheck] as const)
   return (
-    <span className={cn("inline-flex w-fit items-center gap-1 border px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.08em] uppercase", tone)}>
+    <Chip tone={tone}>
       <Icon size={11} />
       {label}
-    </span>
+    </Chip>
   )
 }
 

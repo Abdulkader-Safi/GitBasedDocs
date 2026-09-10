@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ErrorText, Field } from "@/components/ui/field"
 import { PageHeader } from "@/components/ui/page-header"
+import { Chip } from "@/components/ui/status-badge"
 import {
   IconArchive,
   IconCheck,
@@ -337,10 +338,10 @@ export function ProjectsManager() {
                     <span className="flex items-center gap-2">
                       <span className="truncate font-mono text-[13px] font-medium">{p.name}</span>
                       {!p.isActive && (
-                        <span className="flex items-center gap-1 border border-border px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                        <Chip tone="neutral">
                           <IconArchive size={10} />
                           Archived
-                        </span>
+                        </Chip>
                       )}
                     </span>
                     <span className="truncate font-mono text-xs text-muted-foreground">

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ErrorText, Field } from "@/components/ui/field"
 import { PageHeader } from "@/components/ui/page-header"
+import { Chip } from "@/components/ui/status-badge"
 import { relativeTime } from "@/lib/format"
 import {
   IconArchive,
@@ -44,20 +45,6 @@ type Mode = { kind: "create" } | { kind: "edit"; user: User } | { kind: "reset";
 const selectClass =
   "h-9 w-full border border-input bg-background px-3 font-mono text-[13px] text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
 
-function Pill({ children, tone }: { children: React.ReactNode; tone: "strong" | "muted" | "ok" }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.08em] uppercase",
-        tone === "strong" && "border-foreground text-foreground",
-        tone === "muted" && "border-border text-muted-foreground",
-        tone === "ok" && "border-status-success text-status-success",
-      )}
-    >
-      {children}
-    </span>
-  )
-}
 
 function UserDialog({
   mode,
@@ -194,7 +181,7 @@ function UserDialog({
                       type="checkbox"
                       checked={picked.includes(p.id)}
                       onChange={() => toggle(p.id)}
-                      className="size-4 accent-foreground"
+                      className="size-4 accent-primary"
                     />
                     {p.name}
                     {!p.isActive && <span className="text-muted-foreground">(archived)</span>}
@@ -278,7 +265,7 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
       <details className="group relative inline-block shrink-0">
         <summary
           aria-label={`Actions for ${u.email}`}
-          className="flex size-8 cursor-pointer list-none items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground [&::-webkit-details-marker]:hidden"
+          className="flex size-8 cursor-pointer list-none pointer-coarse:size-10 items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground [&::-webkit-details-marker]:hidden"
         >
           <IconMore size={16} />
         </summary>
@@ -421,19 +408,19 @@ function UserName({ user, self }: { user: User; self: boolean }) {
 
 function RolePill({ user }: { user: User }) {
   return (
-    <Pill tone={user.role === "admin" ? "strong" : "muted"}>
+    <Chip tone={user.role === "admin" ? "strong" : "neutral"}>
       {user.role === "admin" && <IconSettings size={11} />}
       {user.role}
-    </Pill>
+    </Chip>
   )
 }
 
 function StatusPill({ user }: { user: User }) {
   return (
-    <Pill tone={user.isActive ? "ok" : "muted"}>
+    <Chip tone={user.isActive ? "success" : "neutral"}>
       {user.isActive ? <IconCheck size={11} /> : <IconArchive size={11} />}
       {user.isActive ? "Active" : "Deactivated"}
-    </Pill>
+    </Chip>
   )
 }
 

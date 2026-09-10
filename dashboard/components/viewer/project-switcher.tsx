@@ -16,7 +16,7 @@ export function ProjectSwitcher({
 }) {
   return (
     <details key={current.slug} className="group relative min-w-0">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 border border-border px-2 py-1 font-mono text-[13px] font-medium select-none hover:bg-muted [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 border border-border px-2 py-1 font-mono text-[13px] pointer-coarse:py-2 font-medium select-none hover:bg-muted [&::-webkit-details-marker]:hidden">
         <span className="max-w-28 truncate sm:max-w-48">{current.name}</span>
         <IconChevronDown
           size={12}

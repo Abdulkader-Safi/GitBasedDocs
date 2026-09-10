@@ -33,11 +33,11 @@ export function Checkbox({
           type="checkbox"
           checked={checked}
           onChange={(e) => onCheckedChange(e.target.checked)}
-          className="peer absolute inset-0 cursor-pointer appearance-none border border-input bg-background checked:border-foreground checked:bg-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+          className="peer absolute inset-0 cursor-pointer appearance-none border border-input bg-background checked:border-primary checked:bg-primary focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         />
         <IconCheck
           size={11}
-          className="pointer-events-none relative hidden text-background peer-checked:block"
+          className="pointer-events-none relative hidden text-primary-foreground peer-checked:block"
         />
       </span>
       {label}

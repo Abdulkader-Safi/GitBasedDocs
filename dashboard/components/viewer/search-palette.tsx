@@ -129,7 +129,7 @@ export function SearchPalette({ projectSlug, projectName }: { projectSlug: strin
         type="button"
         onClick={open}
         aria-label="Search this project"
-        className="flex h-8 items-center gap-2 border border-border bg-muted px-2.5 font-mono text-[13px] text-muted-foreground hover:text-foreground sm:w-64"
+        className="flex h-8 items-center gap-2 border pointer-coarse:h-10 pointer-coarse:px-3 border-border bg-muted px-2.5 font-mono text-[13px] text-muted-foreground hover:text-foreground sm:w-64"
       >
         <IconSearch size={14} />
         <span className="hidden flex-1 text-start sm:inline">Search</span>
