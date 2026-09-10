@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 
 import { requireSession } from "@/lib/auth/session"
@@ -11,6 +12,9 @@ import {
   IconFile,
   IconRepo,
 } from "@/components/icons"
+
+// Same folder as the root layout, so its title template does not apply here.
+export const metadata: Metadata = { title: { absolute: "Projects · GitBasedDocs" } }
 
 export default async function HomePage() {
   const session = await requireSession()

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { headers } from "next/headers"
 
 import { requireAdmin } from "@/lib/auth/admin"
@@ -5,6 +6,8 @@ import { intervalFromEnv } from "@/lib/sync/schedule"
 
 import { ConnectionForm } from "./connection-form"
 import { SyncPanel } from "@/components/admin/sync-panel"
+
+export const metadata: Metadata = { title: "Connection · Admin" }
 
 export default async function ConnectionPage() {
   await requireAdmin()

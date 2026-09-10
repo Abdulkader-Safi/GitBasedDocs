@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 
 import { auth } from "@/lib/auth/session"
@@ -7,6 +8,8 @@ import { IconHome, IconSearch } from "@/components/icons"
 
 // One 404 for every miss: a bad slug, a project you are not in, an archived
 // project, a draft. It never names the project or hints that one exists.
+export const metadata: Metadata = { title: "Page not found" }
+
 export default async function NotFound() {
   const session = await auth()
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { desc } from "drizzle-orm"
 import { cn } from "cn"
@@ -46,6 +47,8 @@ function Tile({
     </Link>
   )
 }
+
+export const metadata: Metadata = { title: "Overview · Admin" }
 
 export default async function AdminPage() {
   await requireAdmin()

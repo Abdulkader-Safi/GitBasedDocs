@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Geist, JetBrains_Mono, Merriweather } from "next/font/google"
 
 import "./globals.css"
@@ -13,6 +14,11 @@ const fontSans = Geist({
 })
 
 const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'})
+
+// Every tab says which page it is, then the product: "Users · Admin · GitBasedDocs".
+export const metadata: Metadata = {
+  title: { default: "GitBasedDocs", template: "%s · GitBasedDocs" },
+}
 
 export default function RootLayout({
   children,

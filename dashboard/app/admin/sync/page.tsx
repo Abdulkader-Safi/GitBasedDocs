@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { desc } from "drizzle-orm"
 
 import { requireAdmin } from "@/lib/auth/admin"
@@ -5,6 +6,8 @@ import { getDb } from "@/lib/db"
 import { syncLogs } from "@/lib/db/schema"
 import { PageHeader } from "@/components/ui/page-header"
 import { SyncRunsTable } from "@/components/admin/sync-runs"
+
+export const metadata: Metadata = { title: "Sync runs · Admin" }
 
 export default async function SyncRunsPage() {
   await requireAdmin()

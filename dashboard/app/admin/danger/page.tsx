@@ -1,8 +1,11 @@
+import type { Metadata } from "next"
 import { requireAdmin } from "@/lib/auth/admin"
 import { listProjects } from "@/lib/projects/projects"
 import { listAudit, PHRASES, PURGE_AFTER_DAYS } from "@/lib/admin/danger"
 import { PageHeader } from "@/components/ui/page-header"
 import { DangerZone } from "@/components/admin/danger-zone"
+
+export const metadata: Metadata = { title: "Danger zone · Admin" }
 
 export default async function DangerPage() {
   await requireAdmin()

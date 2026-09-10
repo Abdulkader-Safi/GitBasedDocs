@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { cn } from "cn"
 
@@ -13,6 +14,8 @@ type Search = Promise<{ user?: string; project?: string; result?: string }>
 
 const selectClass =
   "h-9 border border-input bg-background px-3 font-mono text-[13px] text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+
+export const metadata: Metadata = { title: "Access log · Admin" }
 
 export default async function AccessLogPage({ searchParams }: { searchParams: Search }) {
   await requireAdmin()

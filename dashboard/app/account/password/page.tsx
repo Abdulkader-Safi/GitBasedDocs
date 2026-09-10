@@ -1,8 +1,11 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { auth } from "@/lib/auth/session"
 import { TopBar } from "@/components/chrome/top-bar"
 import { PasswordForm } from "./password-form"
+
+export const metadata: Metadata = { title: "Change password" }
 
 export default async function PasswordPage() {
   // auth(), not requireSession(): this is where requireSession sends people.
