@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { cn } from "cn"
 
 import type { OutlineItem } from "@/lib/render/markdown"
@@ -9,6 +9,9 @@ import type { OutlineItem } from "@/lib/render/markdown"
 // A heading counts as current once it passes the top third of the screen.
 export function Outline({ items }: { items: OutlineItem[] }) {
   const [current, setCurrent] = useState(items[0]?.id ?? "")
+  // A clicked title stays marked while the smooth scroll runs, so the mark
+  // does not flicker through every heading on the way.
+  const heldUntil = useRef(0)
 
   useEffect(() => {
     const headings = items
@@ -16,6 +19,13 @@ export function Outline({ items }: { items: OutlineItem[] }) {
       .filter((el): el is HTMLElement => el !== null)
     if (!headings.length) return
     const onScroll = () => {
+      if (Date.now() < heldUntil.current) return
+      // At the very bottom the last sections can never reach the top third;
+      // mark the last one so it is reachable at all.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+        setCurrent(headings[headings.length - 1].id)
+        return
+      }
       const line = window.innerHeight / 3
       let id = headings[0].id
       for (const h of headings) {
@@ -34,16 +44,17 @@ export function Outline({ items }: { items: OutlineItem[] }) {
   }, [items])
 
   return (
-    <nav aria-label="On this page" className="flex flex-col gap-2.5">
-      <span className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-        On this page
-      </span>
+    <nav aria-label="On this page">
       <ul className="flex flex-col border-s border-border">
         {items.map((item) => (
           <li key={item.id}>
             <a
               href={`#${item.id}`}
               aria-current={item.id === current ? "location" : undefined}
+              onClick={() => {
+                setCurrent(item.id)
+                heldUntil.current = Date.now() + 1000
+              }}
               className={cn(
                 "-ms-px block border-s-2 py-1 font-mono text-[13px] leading-snug",
                 item.depth === 3 ? "ps-6" : "ps-3",

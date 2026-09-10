@@ -311,6 +311,21 @@
   }
 }
 
+/* Reader page width and outline panel, from data attributes set on <html>
+   before first paint (lib/viewer/prefs.ts). Narrow keeps a comfortable line
+   length; wide makes room for tables and diagrams; full uses the window. */
+/* Unlayered on purpose: it has to beat the xl:flex utility on the panel,
+   and Tailwind's utilities layer outranks anything in a layer before it. */
+.doc-body { max-width: 42rem; }
+[data-page-width="wide"] .doc-body { max-width: 64rem; }
+[data-page-width="full"] .doc-body { max-width: none; }
+[data-outline="hidden"] .doc-outline { display: none; }
+
+/* #links glide instead of jumping, unless the reader asked for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
 /* An image the index does not have: its name in a box, never a broken icon. */
 @layer components {
   .doc-prose .asset-missing {

@@ -32,11 +32,13 @@ import { ProjectSwitcher } from "@/components/viewer/project-switcher"
 import { Article } from "@/components/viewer/article"
 import { SearchPalette } from "@/components/viewer/search-palette"
 import { Outline } from "@/components/viewer/outline"
+import { OutlineToggle, PageWidthMenu } from "@/components/viewer/page-controls"
 import { Chip } from "@/components/ui/status-badge"
 import {
   IconArrowLeft,
   IconArrowRight,
   IconClock,
+  IconList,
   IconRepo,
   IconWarning,
 } from "@/components/icons"
@@ -149,6 +151,8 @@ export default async function DocPage({
         lead={<MobileNav>{sidebar}</MobileNav>}
         start={<ProjectSwitcher current={project} projects={visible} />}
       >
+        <PageWidthMenu />
+        {toc.length > 1 && <OutlineToggle className="hidden xl:flex" />}
         <SearchPalette projectSlug={project.slug} projectName={project.name} />
       </TopBar>
       <div className="flex flex-1">
@@ -156,21 +160,24 @@ export default async function DocPage({
           {sidebar}
         </aside>
         <main className="min-w-0 flex-1 px-6 py-10 xl:px-10">
-          <div
-            className={cn(
-              "mx-auto flex w-full max-w-[672px] gap-12",
-              toc.length > 1 && "xl:max-w-[944px]"
-            )}
-          >
-            <div className="w-full max-w-[672px] min-w-0">{content}</div>
-            {/* Only worth a column with two or more headings to jump between. */}
-            {toc.length > 1 && (
-              <aside className="sticky top-24 hidden max-h-[calc(100svh-8rem)] w-56 shrink-0 self-start overflow-y-auto xl:block print:hidden">
-                <Outline items={toc} />
-              </aside>
-            )}
-          </div>
+          {/* Width comes from the reader's choice on <html> (globals.css). */}
+          <div className="doc-body mx-auto w-full min-w-0">{content}</div>
         </main>
+        {/* Only worth a panel with two or more headings to jump between. */}
+        {toc.length > 1 && (
+          <aside className="doc-outline sticky top-14 hidden h-[calc(100svh-3.5rem)] w-64 shrink-0 flex-col self-start border-s border-border bg-sidebar xl:flex print:hidden">
+            <div className="flex items-center gap-2 py-3 ps-4 pe-2">
+              <IconList size={14} className="shrink-0 text-muted-foreground" />
+              <span className="flex-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                On this page
+              </span>
+              <OutlineToggle />
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              <Outline items={toc} />
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   )
