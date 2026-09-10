@@ -43,6 +43,13 @@
       "when": 1789033290594,
       "tag": "0005_user_login_and_revoke",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789033835030,
+      "tag": "0006_sync_log_status",
+      "breakpoints": true
     }
   ]
 }

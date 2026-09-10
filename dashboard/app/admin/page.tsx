@@ -1,6 +1,10 @@
 import Link from "next/link"
+import { desc } from "drizzle-orm"
 
 import { requireAdmin } from "@/lib/auth/admin"
+import { getDb } from "@/lib/db"
+import { syncLogs } from "@/lib/db/schema"
+import { relativeTime } from "@/lib/format"
 import { getConnection } from "@/lib/github/connection"
 import { listProjects } from "@/lib/projects/projects"
 import { deniedInLastDays } from "@/lib/access/log"
@@ -9,7 +13,7 @@ import { intervalFromEnv } from "@/lib/sync/schedule"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatusBadge, type ConnectionStatus } from "@/components/ui/status-badge"
 import { SyncPanel } from "@/components/admin/sync-panel"
-import { IconArrowRight, IconFolder, IconRepo, IconShieldCheck, IconUser } from "@/components/icons"
+import { IconArrowRight, IconFolder, IconRefresh, IconRepo, IconShieldCheck, IconUser } from "@/components/icons"
 
 function AdminCard({
   href,
@@ -47,11 +51,13 @@ function AdminCard({
 
 export default async function AdminPage() {
   await requireAdmin()
-  const [connection, projects, denied, people] = await Promise.all([
+  const db = await getDb()
+  const [connection, projects, denied, people, [lastRun]] = await Promise.all([
     getConnection(),
     listProjects(),
     deniedInLastDays(7),
     listUsers(),
+    db.select().from(syncLogs).orderBy(desc(syncLogs.createdAt)).limit(1),
   ])
   const admins = people.filter((u) => u.role === "admin" && u.isActive).length
 
@@ -104,6 +110,16 @@ export default async function AdminPage() {
           icon={<IconUser size={17} />}
           title="Users"
           meta={`${people.length} ${people.length === 1 ? "account" : "accounts"} · ${admins} ${admins === 1 ? "admin" : "admins"}`}
+        />
+        <AdminCard
+          href="/admin/sync"
+          icon={<IconRefresh size={17} />}
+          title="Sync runs"
+          meta={
+            lastRun
+              ? `Last run ${relativeTime(lastRun.createdAt)} · ${lastRun.status === "error" ? "failed" : lastRun.status === "unchanged" ? "no change" : "synced"}`
+              : "No runs yet"
+          }
         />
         <AdminCard
           href="/admin/access"

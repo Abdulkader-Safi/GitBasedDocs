@@ -141,6 +141,8 @@ export const docPages = sqliteTable(
 export const syncLogs = sqliteTable("sync_logs", {
   id: text("id").primaryKey(),
   trigger: text("trigger").notNull(),
+  // "unchanged", "synced" or "error". Errors on a synced run are warnings.
+  status: text("status").notNull().default("synced"),
   headSha: text("head_sha"),
   added: integer("added").notNull().default(0),
   changed: integer("changed").notNull().default(0),

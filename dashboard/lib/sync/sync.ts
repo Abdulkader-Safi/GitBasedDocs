@@ -163,6 +163,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
     await db.insert(syncLogs).values({
       id: randomUUID(),
       trigger,
+      status,
       headSha,
       added,
       changed,
