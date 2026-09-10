@@ -20,6 +20,19 @@ export function verifySignature(
   return timingSafeEqual(a, b)
 }
 
+// GitHub offers two content types and defaults to form. With form the body
+// is "payload=<url-encoded JSON>"; the signature still covers the raw body,
+// so verify first and parse second.
+export function parsePayload(raw: string, contentType: string | null): unknown {
+  const type = (contentType ?? "").toLowerCase()
+  if (type.includes("application/x-www-form-urlencoded")) {
+    const payload = new URLSearchParams(raw).get("payload")
+    if (payload === null) throw new Error("Form body has no payload field")
+    return JSON.parse(payload)
+  }
+  return JSON.parse(raw)
+}
+
 // "refs/heads/main" is a push to main. Tags and other branches are not.
 export function refMatchesBranch(ref: unknown, branch: string): boolean {
   return typeof ref === "string" && ref === `refs/heads/${branch}`

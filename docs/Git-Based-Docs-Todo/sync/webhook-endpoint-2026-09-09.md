@@ -5,7 +5,7 @@ priority: "medium"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-09T20:40:00.000Z"
+modified: "2026-09-10T09:05:00.000Z"
 labels: ["sync"]
 order: 10
 ---
@@ -42,3 +42,10 @@ Verified over HTTP against the running server:
 The queued run landed in `sync_logs` as `webhook sha=67caeac +0/~0/-0 1242ms`, stopping on the head sha check as expected.
 
 Webhook URL for this host: `https://safis-macbook-pro.tail0b6830.ts.net/api/webhooks/github`, content type application/json, secret `GITHUB_WEBHOOK_SECRET`, push events only.
+
+Follow up (2026-09-10): pushes to `Abdulkader-Safi/docs` were not updating the app. Two things on the GitHub side, one of them also a code gap:
+
+- The hook URL was the site root (`https://safis-macbook-pro.tail0b6830.ts.net/`), not `/api/webhooks/github`. Every push went to the home page, which answered 200, so GitHub's delivery log showed green while nothing synced. Needs changing in the repo's webhook settings.
+- The hook's content type was `form`, GitHub's default. The route only parsed JSON, so even at the right URL every push would have come back 400 "Bad payload". The route now accepts both (`parsePayload` in `lib/github/webhook.ts`), still verifying the signature over the raw body first.
+
+Verified end to end: a signed, form-encoded push sent through the Tailscale URL returned `{"queued":true}` and the sync caught the index up from `67caeac` to `3466f1d` (`~1 changed, -1 removed`).

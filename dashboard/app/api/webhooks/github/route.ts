@@ -4,6 +4,7 @@ import { getConnection } from "@/lib/github/connection"
 import { runSync } from "@/lib/sync/sync"
 import {
   isRepeatDelivery,
+  parsePayload,
   refMatchesBranch,
   verifySignature,
 } from "@/lib/github/webhook"
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
 
   let ref: unknown = null
   try {
-    ref = (JSON.parse(raw) as { ref?: unknown }).ref
+    ref = (parsePayload(raw, request.headers.get("content-type")) as { ref?: unknown }).ref
   } catch {
     return NextResponse.json({ error: "Bad payload" }, { status: 400 })
   }

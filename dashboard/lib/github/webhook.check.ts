@@ -6,6 +6,7 @@ import { createHmac } from "node:crypto"
 
 import {
   isRepeatDelivery,
+  parsePayload,
   refMatchesBranch,
   resetDeliveryCache,
   verifySignature,
@@ -38,6 +39,16 @@ assert.equal(refMatchesBranch("refs/tags/v1", "main"), false)
 assert.equal(refMatchesBranch("refs/heads/main/extra", "main"), false)
 assert.equal(refMatchesBranch(undefined, "main"), false)
 assert.equal(refMatchesBranch("refs/heads/release", "release"), true)
+
+// both content types GitHub can send parse to the same object
+const json = { ref: "refs/heads/main", commits: [{ message: "a & b = c" }] }
+assert.deepEqual(parsePayload(JSON.stringify(json), "application/json"), json)
+const form = "payload=" + encodeURIComponent(JSON.stringify(json))
+assert.deepEqual(parsePayload(form, "application/x-www-form-urlencoded"), json)
+assert.deepEqual(parsePayload(JSON.stringify(json), null), json, "missing header falls back to JSON")
+// the signature covers the raw form body, not the decoded JSON
+assert.equal(verifySignature(form, sign(form), SECRET), true)
+assert.throws(() => parsePayload("other=1", "application/x-www-form-urlencoded"))
 
 // delivery ids are skipped the second time, and a missing id never blocks
 resetDeliveryCache()
