@@ -8,12 +8,15 @@ import { ThemeToggle } from "@/components/chrome/theme-toggle"
 export function TopBar({
   variant = "reader",
   email,
+  isAdmin = false,
   lead,
   start,
   children,
 }: {
   variant?: "reader" | "admin"
   email?: string | null
+  // Admins get a way into the admin area from the reader pages.
+  isAdmin?: boolean
   // Before the wordmark, e.g. the mobile menu button.
   lead?: React.ReactNode
   // After the wordmark, e.g. the project switcher.
@@ -24,7 +27,7 @@ export function TopBar({
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-4 border-b border-border bg-background px-4 sm:px-6 print:hidden">
       {lead}
       <Link
-        href={variant === "admin" ? "/admin" : "/"}
+        href="/"
         className="flex items-center gap-2 font-mono text-sm font-medium text-foreground"
       >
         <IconBook size={18} />
@@ -39,14 +42,26 @@ export function TopBar({
       )}
 
       {variant === "admin" && (
-        <span className="flex items-center gap-1.5 bg-muted px-2 py-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+        <Link
+          href="/admin"
+          className="flex items-center gap-1.5 bg-muted px-2 py-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
+        >
           <IconSettings size={11} />
           Admin
-        </span>
+        </Link>
       )}
 
       <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
         {children}
+        {variant === "reader" && isAdmin && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-1.5 px-2 py-1 font-mono text-[13px] text-muted-foreground hover:text-foreground"
+          >
+            <IconSettings size={14} />
+            Admin
+          </Link>
+        )}
         <ThemeToggle />
         {email && (
           <span className="hidden items-center gap-1.5 font-mono text-[13px] text-muted-foreground md:flex">

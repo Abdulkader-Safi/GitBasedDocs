@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth/admin"
 import { intervalFromEnv } from "@/lib/sync/schedule"
 
 import { ConnectionForm } from "./connection-form"
-import { SyncPanel } from "./sync-panel"
+import { SyncPanel } from "@/components/admin/sync-panel"
 
 export default async function ConnectionPage() {
   await requireAdmin()

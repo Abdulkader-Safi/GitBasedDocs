@@ -21,7 +21,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <TopBar email={session.user.email} />
+      <TopBar email={session.user.email} isAdmin={session.user.role === "admin"} />
       <main className="flex-1 px-6 py-8">
         <div className="flex flex-col gap-6">
           <PageHeader

@@ -78,6 +78,7 @@ export default async function DocPage({ params }: { params: Params }) {
     <div className="flex min-h-svh flex-col">
       <TopBar
         email={session.user.email}
+        isAdmin={isAdmin}
         lead={<MobileNav>{sidebar}</MobileNav>}
         start={<ProjectSwitcher current={project} projects={visible} />}
       />
