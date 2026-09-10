@@ -1,11 +1,11 @@
 ---
 id: "admin-settings-and-deploy-notes-2026-09-09"
-status: "in-progress"
+status: "done"
 priority: "medium"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-10T10:30:00.000Z"
+modified: "2026-09-10T11:00:00.000Z"
 labels: ["admin", "deploy"]
 order: 18
 ---
@@ -25,9 +25,11 @@ Progress:
 - [x] Sync runs at `/admin/sync`: last 50 runs with when, trigger, status, commit, counts and duration. Rows with errors open (native `<details>`) to show each line, with the failing path split out. `sync_logs.status` added in migration 0006 and backfilled for old rows. Admin home has a "Sync runs" card with the last run.
 - [x] Danger zone on `/admin` (`#danger-zone`): archive a project (type its slug), purge pages deleted more than 30 days ago (type "purge"), clear the HTML cache (type "clear cache"). The server checks the phrase too, so the API cannot skip it. Each success writes an `audit_logs` line with the admin's email (migration 0007), and the last 20 show under the panel. Archiving through the projects API is refused; restore stays on Projects and is audited. The render cache now lives on `globalThis` so clearing it from an API route hits the cache pages read. Check: `lib/admin/danger.check.ts`.
 - [x] Password fields (login and change password) share one `PasswordInput` with an eye toggle.
-- [ ] Deploy notes.
+- [x] Deploy notes in `dashboard/README.md`: env table, one-instance rule, `data/` volume for the DB and assets, migrations on first DB call (no separate step), TLS proxy, webhook setup, and every check command. Confirmed `next build` passes with an unreachable `DATABASE_URL`. Dropped the unused `AUTH_SECRET` from `.env.example`.
+
+Differs from the spec: Postgres is not supported. The schema is SQLite only (`@libsql/client`). Deploy is one instance with a persistent `data/` volume. Moving to Postgres needs a pg schema and a follow-up card.
 
 Done when:
 
 - [x] Every danger action needs typed confirm and writes an audit line.
-- [ ] `lint`, `typecheck`, `build` pass as the final check.
+- [x] `lint`, `typecheck`, `build` pass as the final check.
