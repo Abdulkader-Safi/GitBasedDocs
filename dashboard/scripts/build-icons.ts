@@ -15,7 +15,7 @@ const ICONS: Record<string, string> = {
   loader: "loader", logout: "logout", menu: "menu", moon: "moon", more: "more-h",
   plus: "plus", refresh: "refresh", repo: "code-square", search: "search",
   settings: "setting2", sun: "sun", tip: "bulb", trash: "trash", user: "user",
-  warning: "triangle-warning",
+  warning: "triangle-warning", shieldCheck: "shield-check",
 }
 
 function toJsx(svg: string) {

@@ -3,11 +3,12 @@ import Link from "next/link"
 import { requireAdmin } from "@/lib/auth/admin"
 import { getConnection } from "@/lib/github/connection"
 import { listProjects } from "@/lib/projects/projects"
+import { deniedInLastDays } from "@/lib/access/log"
 import { intervalFromEnv } from "@/lib/sync/schedule"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatusBadge, type ConnectionStatus } from "@/components/ui/status-badge"
 import { SyncPanel } from "@/components/admin/sync-panel"
-import { IconArrowRight, IconFolder, IconRepo } from "@/components/icons"
+import { IconArrowRight, IconFolder, IconRepo, IconShieldCheck } from "@/components/icons"
 
 function AdminCard({
   href,
@@ -45,7 +46,11 @@ function AdminCard({
 
 export default async function AdminPage() {
   await requireAdmin()
-  const [connection, projects] = await Promise.all([getConnection(), listProjects()])
+  const [connection, projects, denied] = await Promise.all([
+    getConnection(),
+    listProjects(),
+    deniedInLastDays(7),
+  ])
 
   const active = projects.filter((p) => p.isActive).length
   const archived = projects.length - active
@@ -90,6 +95,12 @@ export default async function AdminPage() {
           icon={<IconFolder size={17} />}
           title="Projects"
           meta={`${active} active · ${archived} archived`}
+        />
+        <AdminCard
+          href="/admin/access"
+          icon={<IconShieldCheck size={17} />}
+          title="Access log"
+          meta={`${denied} denied ${denied === 1 ? "attempt" : "attempts"} in the last 7 days`}
         />
       </div>
 

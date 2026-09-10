@@ -1,7 +1,7 @@
 import { lt } from "drizzle-orm"
 
 import { getDb } from "@/lib/db"
-import { syncLogs } from "@/lib/db/schema"
+import { accessLogs, syncLogs } from "@/lib/db/schema"
 import { getConnection } from "@/lib/github/connection"
 import { runSync } from "@/lib/sync/sync"
 
@@ -11,6 +11,8 @@ const MINUTE = 60_000
 // message meanwhile, which is what raises the admin banner.
 const BACKOFF = [1 * MINUTE, 5 * MINUTE]
 const KEEP_LOGS_MS = 30 * 24 * 60 * MINUTE
+// Every page open writes an access row, so these get a window too.
+const KEEP_ACCESS_MS = 90 * 24 * 60 * MINUTE
 
 export function intervalFromEnv(raw: string | undefined): number {
   const minutes = Number(raw)
@@ -57,6 +59,7 @@ export function startSyncSchedule(intervalMs: number) {
       // The recheck adds a log row per tick, so cap how long they live.
       const db = await getDb()
       await db.delete(syncLogs).where(lt(syncLogs.createdAt, new Date(Date.now() - KEEP_LOGS_MS)))
+      await db.delete(accessLogs).where(lt(accessLogs.createdAt, new Date(Date.now() - KEEP_ACCESS_MS)))
     } catch (e) {
       console.error("[sync] scheduled run failed", e)
     }

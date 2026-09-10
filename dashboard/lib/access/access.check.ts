@@ -14,7 +14,7 @@ rmSync("./data/access-check.db", { force: true })
 
 const { getDb } = await import("@/lib/db")
 const { projectMembers, projects, users } = await import("@/lib/db/schema")
-const { requireProjectAccess } = await import("./access")
+const { checkProjectAccess, requireProjectAccess } = await import("./access")
 const { eq } = await import("drizzle-orm")
 
 const db = await getDb()
@@ -66,6 +66,14 @@ assert.equal(await can(admin, "archived"), null)
 
 // a missing project looks exactly like a forbidden one
 assert.equal(await can(viewerA, "does-not-exist"), null)
+
+// the log-facing variant makes the same decision, but names the project a
+// denied request was aiming at (admin log only), and nothing for a bad slug
+const denied = await checkProjectAccess(viewerA, "northwind")
+assert.equal(denied.allowed, false)
+assert.equal(denied.project?.slug, "northwind")
+assert.deepEqual(await checkProjectAccess(viewerA, "does-not-exist"), { project: null, allowed: false })
+assert.equal((await checkProjectAccess(viewerA, "archived")).allowed, false)
 
 // removing a membership takes effect on the very next check
 await db.delete(projectMembers).where(eq(projectMembers.userId, viewerA.id))

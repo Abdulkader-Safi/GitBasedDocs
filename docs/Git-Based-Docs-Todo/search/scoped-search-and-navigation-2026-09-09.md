@@ -5,7 +5,7 @@ priority: "medium"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-09T11:36:01.000Z"
+modified: "2026-09-10T11:30:00.000Z"
 labels: ["search", "ui"]
 order: 17
 ---
@@ -20,3 +20,4 @@ Done when:
 
 - [ ] Query in project A never returns rows from project B.
 - [ ] Empty query shows recent pages in that project.
+- [ ] The search route goes through `requireProjectAccess`: a viewer searching a project they are not in gets the same 404 as pages and assets. (Moved here from the access card.)

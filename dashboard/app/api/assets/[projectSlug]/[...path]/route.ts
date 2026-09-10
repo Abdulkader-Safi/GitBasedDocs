@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises"
+import { after } from "next/server"
 import { and, eq } from "drizzle-orm"
 
 import { auth } from "@/lib/auth/session"
-import { requireProjectAccess } from "@/lib/access/access"
+import { checkProjectAccess, logAccess } from "@/lib/access/access"
 import { getDb } from "@/lib/db"
 import { assets } from "@/lib/db/schema"
 import { assetFile } from "@/lib/sync/assets"
@@ -27,9 +28,16 @@ export async function GET(request: Request, { params }: { params: Params }) {
   if (!session) return notFound()
 
   // Checked on every request, cached or not, so removing a member cuts off
-  // their images on the next load too.
-  const project = await requireProjectAccess(session.user, projectSlug)
-  if (!project) return notFound()
+  // their images on the next load too. Denials are logged; allowed image
+  // loads are not, they would drown the page opens.
+  const { project, allowed } = await checkProjectAccess(session.user, projectSlug)
+  if (!project || !allowed) {
+    const userId = session.user.id
+    const attempted = project?.id ?? null
+    const requested = new URL(request.url).pathname
+    after(() => logAccess({ userId, projectId: attempted, path: requested, allowed: false }))
+    return notFound()
+  }
 
   const repoPath = path.map(decodeSegment).join("/")
   const db = await getDb()

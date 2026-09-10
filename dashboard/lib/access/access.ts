@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto"
 import { and, eq } from "drizzle-orm"
 
 import { getDb } from "@/lib/db"
-import { projectMembers, projects } from "@/lib/db/schema"
+import { accessLogs, projectMembers, projects } from "@/lib/db/schema"
 
 export interface AccessUser {
   id: string
@@ -18,13 +19,25 @@ export async function requireProjectAccess(
   user: AccessUser,
   projectSlug: string,
 ): Promise<AccessibleProject | null> {
+  const { project, allowed } = await checkProjectAccess(user, projectSlug)
+  return allowed ? project : null
+}
+
+// Same decision, but it also hands back the project row when one exists, so
+// the access log can say which project a denied request was aiming at. Only
+// the admin-only log ever sees that; readers still get a plain 404.
+export async function checkProjectAccess(
+  user: AccessUser,
+  projectSlug: string,
+): Promise<{ project: AccessibleProject | null; allowed: boolean }> {
   const db = await getDb()
   const [project] = await db
     .select()
     .from(projects)
     .where(eq(projects.slug, projectSlug))
-  if (!project || !project.isActive) return null
-  if (user.role === "admin") return project
+  if (!project) return { project: null, allowed: false }
+  if (!project.isActive) return { project, allowed: false }
+  if (user.role === "admin") return { project, allowed: true }
 
   const [member] = await db
     .select({ id: projectMembers.id })
@@ -35,5 +48,29 @@ export async function requireProjectAccess(
         eq(projectMembers.userId, user.id),
       ),
     )
-  return member ? project : null
+  return { project, allowed: Boolean(member) }
+}
+
+// One row per page open and per denied attempt. Call it from after() so the
+// write never slows the response down.
+export async function logAccess(entry: {
+  userId: string
+  projectId: string | null
+  path: string
+  allowed: boolean
+}) {
+  try {
+    const db = await getDb()
+    await db.insert(accessLogs).values({
+      id: randomUUID(),
+      userId: entry.userId,
+      projectId: entry.projectId,
+      path: entry.path.slice(0, 500),
+      allowed: entry.allowed ? 1 : 0,
+      createdAt: new Date(),
+    })
+  } catch (e) {
+    // Losing a log line must never break a page.
+    console.error("[access] could not write log", e)
+  }
 }

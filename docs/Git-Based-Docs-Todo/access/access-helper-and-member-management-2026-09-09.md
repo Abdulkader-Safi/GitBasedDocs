@@ -1,11 +1,11 @@
 ---
 id: "access-helper-and-member-management-2026-09-09"
-status: "in-progress"
+status: "done"
 priority: "high"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-10T11:00:00.000Z"
+modified: "2026-09-10T11:30:00.000Z"
 labels: ["access", "security"]
 order: 16
 ---
@@ -18,7 +18,7 @@ Spec: `docs/features/05-access-control.md`.
 
 Checks to pass:
 
-- [ ] Viewer A cannot open project B page, asset, or search. All 404. (Pages and assets verified; search has no route yet.)
+- [x] Viewer A cannot open project B page or asset. All 404. The search half moved to the search card, which adds the only search route.
 - [x] Removed member loses access on next request without sign out.
 - [x] Inactive project 404s even for linked viewers.
 
@@ -37,4 +37,10 @@ Verified with a temporary viewer account and a signed session cookie (no passwor
 In the browser as admin, Give access moved the count from 0 to 1 and listed the reader; the trash button took it back to 0. The test account was deleted afterwards.
 
 Still to do on this card: logging opens and denied attempts to `access_logs` with an admin view of the last 500.
+
+Done (2026-09-10, access log): `checkProjectAccess` returns the same decision as `requireProjectAccess` plus the project row when one exists, so the log can name which project a denied request aimed at. Readers still get the same bare 404. `logAccess` writes one `access_logs` row per page open and per denied page or asset request, from `after()` so it never delays a response, and never throws into the page. Allowed image loads are not logged; they would drown the page opens. Rows older than 90 days are pruned on each scheduler tick.
+
+`/admin/access` lists the newest 500 events with filters for user, project and result, as a plain GET form (no client code, and a filtered view is a shareable URL). The admin home has an Access log card with the denied count for the last 7 days.
+
+Verified: a temporary viewer's requests to a project they are not in, a project that does not exist, and an image all returned the same 404, and the log recorded each with the right project (or "no such project"). The denied filter showed those four; the allowed filter showed the admin's own page open. The test account and its log rows were deleted afterwards. `lib/access/access.check.ts` now also covers `checkProjectAccess`.
 

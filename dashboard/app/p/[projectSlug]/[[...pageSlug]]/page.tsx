@@ -2,10 +2,11 @@ import { cache } from "react"
 import { createHash } from "node:crypto"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
+import { after } from "next/server"
 import type { Metadata } from "next"
 
 import { auth } from "@/lib/auth/session"
-import { requireProjectAccess } from "@/lib/access/access"
+import { checkProjectAccess, logAccess } from "@/lib/access/access"
 import { listVisibleProjects } from "@/lib/projects/reader"
 import { getPage, listProjectAssetPaths, listProjectPages } from "@/lib/viewer/pages"
 import { buildTree, landingSlug, neighbours, trail } from "@/lib/viewer/tree"
@@ -37,8 +38,9 @@ const loadDoc = cache(async (projectSlug: string, slugParts: string[]) => {
   const session = await auth()
   if (!session) return { session: null } as const
 
-  const project = await requireProjectAccess(session.user, projectSlug)
-  if (!project) return { session, missing: true } as const
+  const { project, allowed } = await checkProjectAccess(session.user, projectSlug)
+  // Keep the id of a project the person was refused, for the admin log only.
+  if (!project || !allowed) return { session, missing: true, attempted: project?.id ?? null } as const
 
   const isAdmin = session.user.role === "admin"
   const pages = await listProjectPages(project.id, isAdmin)
@@ -61,8 +63,15 @@ export default async function DocPage({ params }: { params: Params }) {
   const { projectSlug, pageSlug = [] } = await params
   const doc = await loadDoc(projectSlug, pageSlug)
   if (!doc.session) redirect("/login")
-  // No such project, archived, or not a member: all the same 404.
-  if ("missing" in doc) notFound()
+  const userId = doc.session.user.id
+  const requested = `/p/${projectSlug}${pageSlug.length ? `/${pageSlug.join("/")}` : ""}`
+  // No such project, archived, or not a member: all the same 404, and a
+  // denied line in the admin access log.
+  if ("missing" in doc) {
+    const attempted = doc.attempted ?? null
+    after(() => logAccess({ userId, projectId: attempted, path: requested, allowed: false }))
+    notFound()
+  }
 
   const { session, project, isAdmin, pages, tree, slug, summary } = doc
   const visible = await listVisibleProjects(session.user.id, session.user.role)
@@ -109,6 +118,7 @@ export default async function DocPage({ params }: { params: Params }) {
   if (!summary) notFound()
   const page = await getPage(summary.id)
   if (!page) notFound()
+  after(() => logAccess({ userId, projectId: project.id, path: requested, allowed: true }))
 
   const tooLarge = page.size > MAX_BLOB_BYTES
   if (page.size > WARN_BYTES) {
