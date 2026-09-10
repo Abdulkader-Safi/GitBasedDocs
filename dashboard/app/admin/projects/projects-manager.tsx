@@ -370,7 +370,7 @@ export function ProjectsManager() {
                       <IconChevronDown size={12} className={cn("transition-transform", open === p.id && "rotate-180")} />
                     </Button>
                     {p.isActive ? (
-                      <Link href="/admin/danger" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-destructive")}>
+                      <Link href={`/admin/danger?archive=${encodeURIComponent(p.slug)}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-destructive")}>
                         <IconArchive size={14} />
                         Archive
                       </Link>

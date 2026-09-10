@@ -53,6 +53,7 @@ function DangerRow({
   onRun,
   extra,
   disabled,
+  defaultOpen = false,
 }: {
   icon: React.ReactNode
   title: string
@@ -62,8 +63,9 @@ function DangerRow({
   onRun: (typed: string) => Promise<{ ok: boolean; message: string }>
   extra?: React.ReactNode
   disabled?: boolean
+  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [typed, setTyped] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -175,14 +177,19 @@ export function DangerZone({
   audit,
   purgeDays,
   phrases,
+  archiveSlug,
 }: {
   projects: ProjectChoice[]
   audit: AuditLine[]
   purgeDays: number
   phrases: { purge: string; cache: string }
+  // Set when arriving from a project's Archive button: that project is
+  // picked and its confirm box is already open.
+  archiveSlug?: string
 }) {
   const router = useRouter()
-  const [projectId, setProjectId] = useState(projects[0]?.id ?? "")
+  const requested = projects.find((p) => p.slug === archiveSlug)
+  const [projectId, setProjectId] = useState(requested?.id ?? projects[0]?.id ?? "")
   // After an archive the picked project leaves the list; fall back to the first.
   const project = projects.find((p) => p.id === projectId) ?? projects[0]
 
@@ -209,6 +216,7 @@ export function DangerZone({
           phrase={project?.slug ?? ""}
           button="Archive"
           disabled={!projects.length}
+          defaultOpen={Boolean(requested)}
           onRun={(typed) => post("archive", typed, { projectId: project?.id })}
           extra={
             <select

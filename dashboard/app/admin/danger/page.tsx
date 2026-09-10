@@ -7,8 +7,9 @@ import { DangerZone } from "@/components/admin/danger-zone"
 
 export const metadata: Metadata = { title: "Danger zone · Admin" }
 
-export default async function DangerPage() {
+export default async function DangerPage({ searchParams }: { searchParams: Promise<{ archive?: string }> }) {
   await requireAdmin()
+  const { archive } = await searchParams
   const [projects, audit] = await Promise.all([listProjects(), listAudit()])
   return (
     <div className="flex flex-col gap-6">
@@ -18,6 +19,7 @@ export default async function DangerPage() {
         audit={audit.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
         purgeDays={PURGE_AFTER_DAYS}
         phrases={PHRASES}
+        archiveSlug={archive}
       />
     </div>
   )
