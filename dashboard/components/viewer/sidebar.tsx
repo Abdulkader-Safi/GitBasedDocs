@@ -73,9 +73,11 @@ function Nodes({
   activeSlug: string
   open: Set<string>
 }) {
-  const indent = { paddingInlineStart: `${8 + depth * 14}px` }
+  // Nesting reads from a guide line under the parent folder's arrow, the
+  // way Obsidian and VS Code draw it: each level steps in 16px, and pages
+  // carry an arrow-wide spacer so their icon lines up with folder icons.
   return (
-    <ul className="flex flex-col gap-px">
+    <ul className={cn("flex flex-col gap-px", depth > 0 && "ms-[15px] border-s border-border")}>
       {nodes.map((node) => {
         if (node.kind === "page") {
           const active = node.slug === activeSlug
@@ -84,14 +86,14 @@ function Nodes({
               <Link
                 href={pageHref(projectSlug, node.slug)}
                 aria-current={active ? "page" : undefined}
-                style={indent}
                 className={cn(
-                  "flex items-center gap-1.5 border-s-2 py-1.5 pe-2 font-mono text-[13px]",
+                  "flex items-center gap-1.5 border-s-2 py-1.5 ps-2 pe-2 font-mono text-[13px]",
                   active
                     ? "border-primary bg-accent font-medium text-foreground"
                     : "border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                 )}
               >
+                <span aria-hidden className="w-3 shrink-0" />
                 <IconFile size={14} className="shrink-0" />
                 <span className="truncate">{node.title}</span>
               </Link>
@@ -104,9 +106,8 @@ function Nodes({
           <li key={`f:${node.path}`}>
             <details open={open.has(node.path)} className="group">
               <summary
-                style={indent}
                 className={cn(
-                  "flex cursor-pointer list-none items-center gap-1.5 border-s-2 py-1.5 pe-2 font-mono text-[13px] font-medium select-none [&::-webkit-details-marker]:hidden",
+                  "flex cursor-pointer list-none items-center gap-1.5 border-s-2 py-1.5 ps-2 pe-2 font-mono text-[13px] font-medium select-none [&::-webkit-details-marker]:hidden",
                   activeIndex
                     ? "border-primary bg-accent text-foreground"
                     : "border-transparent text-foreground hover:bg-accent/60",
