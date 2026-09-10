@@ -268,6 +268,9 @@
   .doc-prose pre .line.diff.add { background: oklch(0.8 0.16 151 / 12%); box-shadow: inset 2px 0 oklch(0.8 0.16 151); }
   .doc-prose pre .line.diff.remove { background: oklch(0.7 0.19 22 / 14%); box-shadow: inset 2px 0 oklch(0.7 0.19 22); opacity: 0.75; }
 
+  /* A wide formula scrolls inside itself instead of widening the page. */
+  .doc-prose .katex-display { overflow-x: auto; overflow-y: hidden; padding-block: 0.25rem; }
+
   /* Mermaid: the source shows dimmed until the browser draws it. */
   .doc-prose .mermaid-diagram {
     @apply overflow-x-auto border border-border bg-card p-4 text-center;

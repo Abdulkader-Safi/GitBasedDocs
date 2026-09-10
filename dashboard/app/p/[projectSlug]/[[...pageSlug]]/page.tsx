@@ -5,6 +5,7 @@ import { cn } from "cn"
 import { notFound, redirect } from "next/navigation"
 import { after } from "next/server"
 import type { Metadata } from "next"
+import "katex/dist/katex.min.css"
 
 import { auth } from "@/lib/auth/session"
 import { checkProjectAccess, logAccess } from "@/lib/access/access"

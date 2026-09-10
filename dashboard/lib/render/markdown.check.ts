@@ -136,6 +136,26 @@ assert.doesNotMatch(await r("```html\n<script>alert(1)</script>\n```"), /<script
   assert.doesNotMatch(m, /<b>|code-block|shiki/, "never highlighted, never parsed as HTML")
 }
 
+// --- math --------------------------------------------------------------------------
+{
+  const inline = await r("Energy is $E = mc^2$ here.")
+  assert.match(inline, /<span class="katex">/)
+  assert.doesNotMatch(inline, /katex-display/)
+  const block = await r("$$\n\\int_0^1 x\\,dx\n$$")
+  assert.match(block, /class="katex-display"/)
+  assert.doesNotMatch(block, /code-block/, "display math is not treated as a code block")
+  assert.match(await r("```math\na^2 + b^2\n```"), /class="katex-display"/)
+  // prices are not formulas (Obsidian and Pandoc rule)
+  const money = await r("The plan costs $5 a month, or $50 a year.")
+  assert.doesNotMatch(money, /katex/)
+  assert.match(money, /costs \$5 a month, or \$50 a year/)
+  assert.match(await r("Between $x$ and $y$."), /katex[\s\S]*katex/, "two real formulas still render")
+  // trust is off: \href renders as an error, never a link
+  assert.doesNotMatch(await r("$\\href{javascript:alert(1)}{x}$"), /href="javascript/)
+  // a bad formula shows as an error span, the page still renders
+  assert.match(await r("$\\frac{1}{$ ok"), /katex-error|<p>/)
+}
+
 // --- headings get ids and an anchor ---------------------------------------
 const h = await r("## Getting a token")
 assert.match(h, /<h2 id="getting-a-token">/)

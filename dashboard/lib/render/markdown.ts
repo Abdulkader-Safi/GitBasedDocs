@@ -1,11 +1,14 @@
 import { posix } from "node:path"
 import GithubSlugger from "github-slugger"
 import type { Element, ElementContent, Root, Text } from "hast"
+import type { Root as MdRoot, RootContent as MdNode } from "mdast"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
 import rehypeSanitize from "rehype-sanitize"
 import rehypeSlug from "rehype-slug"
 import rehypeStringify from "rehype-stringify"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
 import remarkParse from "remark-parse"
 import remarkRehype from "remark-rehype"
 import rehypeShiki from "@shikijs/rehype"
@@ -88,6 +91,25 @@ function findPage(ctx: RenderContext, target: string): RenderPage | null {
     byPath.get(`${clean}/index.md`) ??
     null
   )
+}
+
+// ---------------------------------------------------------------------------
+// remark-math would read "costs $5 a month, or $50" as a formula. Obsidian
+// and Pandoc do not: inline math cannot start or end with a space, and the
+// closing $ cannot be followed by a digit. Matches that break the rule go
+// back to plain text.
+function remarkDollarGuard() {
+  return (tree: MdRoot, file: { value: unknown }) => {
+    const src = String(file.value)
+    visit(tree, "inlineMath", (node: MdNode & { value: string }, index, parent) => {
+      const start = node.position?.start.offset
+      const end = node.position?.end.offset
+      if (!parent || index === undefined || start === undefined || end === undefined) return
+      if (/^\s|\s$/.test(node.value) || /\d/.test(src[end] ?? "")) {
+        parent.children[index] = { type: "text", value: src.slice(start, end) } as MdNode
+      }
+    })
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -449,6 +471,8 @@ export async function renderMarkdown(markdown: string, ctx: RenderContext): Prom
   const file = await unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkMath)
+    .use(remarkDollarGuard)
     .use(remarkRehype)
     .use(rehypeSanitize)
     .use(rehypeSlug)
@@ -457,6 +481,9 @@ export async function renderMarkdown(markdown: string, ctx: RenderContext): Prom
       properties: { className: ["heading-anchor"], ariaLabel: "Link to this section" },
       content: { type: "text", value: "#" },
     })
+    // KaTeX renders $x$ and $$x$$ to HTML here, so readers load no script.
+    // `trust` stays off: no \href or \includegraphics from the page.
+    .use(rehypeKatex, { strict: "ignore", output: "htmlAndMathml" })
     .use(rehypeMermaid)
     .use(rehypeShiki, shikiOptions)
     .use(rehypeWikiLinks, ctx)
@@ -486,7 +513,7 @@ export function clearRenderCache(): number {
 
 // Bump when the pipeline's output changes, so cached HTML from the old
 // pipeline is never served.
-const RENDER_VERSION = 3
+const RENDER_VERSION = 5
 
 export async function renderCached(
   pageKey: string,
