@@ -148,3 +148,123 @@
     @apply font-mono;
     }
 }
+/* ---------------------------------------------------------------------------
+   Rendered doc pages. Prose is Geist (the app base is mono), headings are
+   Merriweather, every corner is square. Matches the doc page in the design. */
+@layer components {
+  .doc-prose {
+    @apply font-sans text-base leading-7 text-foreground;
+  }
+  .doc-prose > * + * { margin-top: 1.25rem; }
+
+  .doc-prose h1, .doc-prose h2, .doc-prose h3, .doc-prose h4 {
+    @apply font-heading text-foreground;
+    /* Clear the 56px sticky top bar when jumping to an anchor. */
+    scroll-margin-top: 5rem;
+  }
+  .doc-prose h1 { @apply text-2xl font-semibold; margin-top: 2.25rem; }
+  .doc-prose h2 { @apply text-xl font-semibold; margin-top: 2.25rem; }
+  .doc-prose h3 { @apply text-[17px] font-medium; margin-top: 1.75rem; }
+  .doc-prose h4 { @apply text-base font-medium; margin-top: 1.5rem; }
+  .doc-prose > :first-child { margin-top: 0; }
+
+  /* Heading anchors show on hover, and stay reachable by keyboard. */
+  .doc-prose .heading-anchor {
+    @apply ms-2 font-mono text-base font-normal text-muted-foreground no-underline opacity-0 transition-opacity;
+  }
+  .doc-prose :is(h1, h2, h3, h4):hover .heading-anchor,
+  .doc-prose .heading-anchor:focus-visible { opacity: 1; }
+
+  .doc-prose a {
+    @apply text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground;
+  }
+  .doc-prose .wikilink-unresolved {
+    @apply text-muted-foreground underline decoration-dashed decoration-border underline-offset-4;
+  }
+
+  .doc-prose strong { @apply font-medium text-foreground; }
+  .doc-prose hr { @apply my-8 border-border; }
+
+  .doc-prose ul { @apply list-disc ps-6; }
+  .doc-prose ol { @apply list-decimal ps-6; }
+  .doc-prose li + li { margin-top: 0.4rem; }
+  .doc-prose li::marker { @apply text-muted-foreground; }
+
+  /* GFM task lists: square checkbox like the design, no bullet. */
+  .doc-prose ul:has(> li > input[type="checkbox"]) { @apply list-none ps-0; }
+  .doc-prose li > input[type="checkbox"] {
+    @apply me-2.5 inline-grid size-4 translate-y-0.5 appearance-none place-content-center border border-input bg-background align-baseline;
+  }
+  .doc-prose li > input[type="checkbox"]:checked {
+    @apply border-foreground bg-foreground;
+  }
+  .doc-prose li > input[type="checkbox"]:checked::after {
+    content: "";
+    @apply block h-2 w-1 translate-y-[-1px] rotate-45 border-r-2 border-b-2 border-background;
+  }
+
+  .doc-prose blockquote {
+    @apply border-s-[3px] border-border ps-4 text-muted-foreground;
+  }
+
+  .doc-prose :not(pre) > code {
+    @apply bg-accent px-1.5 py-0.5 font-mono text-[13px] text-foreground;
+  }
+
+  .doc-prose img { @apply max-w-full border border-border; }
+
+  /* Tables scroll inside themselves on narrow screens. */
+  .doc-prose table {
+    @apply block w-full overflow-x-auto border border-border text-[13px];
+    border-collapse: collapse;
+  }
+  .doc-prose th {
+    @apply bg-muted px-3.5 py-2.5 text-start font-mono font-medium text-foreground;
+  }
+  .doc-prose td {
+    @apply border-t border-border px-3.5 py-2.5 font-mono text-muted-foreground;
+  }
+
+  /* Fenced code: dark in both themes. */
+  .doc-prose .code-block { @apply bg-code-surface text-code-foreground; }
+  .doc-prose .code-head { @apply flex items-center justify-between px-4 pt-2 pb-1; }
+  .doc-prose .code-lang,
+  .doc-prose .code-copy {
+    @apply font-mono text-[11px] font-medium tracking-[0.08em] text-code-muted uppercase;
+  }
+  .doc-prose .code-copy {
+    @apply cursor-pointer px-2 py-1 transition-colors hover:text-code-foreground;
+  }
+  .doc-prose pre {
+    @apply overflow-x-auto px-4 pt-1 pb-4 font-mono text-[13px] leading-[1.7];
+  }
+  .doc-prose pre code { @apply bg-transparent p-0; }
+
+  /* Callouts. */
+  .doc-prose .callout { @apply flex flex-col gap-1 border-s-[3px] bg-muted px-4 py-3.5; }
+  .doc-prose .callout-label { @apply font-mono text-[11px] font-medium tracking-[0.08em]; }
+  .doc-prose .callout-body { @apply text-[15px] leading-relaxed text-foreground; }
+  .doc-prose .callout-body > * + * { margin-top: 0.5rem; }
+  .doc-prose .callout-note { @apply border-foreground; }
+  .doc-prose .callout-note .callout-label { @apply text-foreground; }
+  .doc-prose .callout-tip { @apply border-status-success; }
+  .doc-prose .callout-tip .callout-label { @apply text-status-success; }
+  .doc-prose .callout-warning { @apply border-status-warning; }
+  .doc-prose .callout-warning .callout-label { @apply text-status-warning; }
+
+  /* highlight.js tokens, tuned for the dark code surface. */
+  .doc-prose .hljs-comment, .doc-prose .hljs-quote { color: oklch(0.6 0.012 40); font-style: italic; }
+  .doc-prose .hljs-keyword, .doc-prose .hljs-selector-tag, .doc-prose .hljs-built_in { color: oklch(0.78 0.12 50); }
+  .doc-prose .hljs-string, .doc-prose .hljs-attr, .doc-prose .hljs-template-variable { color: oklch(0.8 0.1 145); }
+  .doc-prose .hljs-number, .doc-prose .hljs-literal, .doc-prose .hljs-symbol { color: oklch(0.8 0.11 75); }
+  .doc-prose .hljs-title, .doc-prose .hljs-section, .doc-prose .hljs-name { color: oklch(0.82 0.08 230); }
+  .doc-prose .hljs-variable, .doc-prose .hljs-params { color: var(--code-foreground); }
+  .doc-prose .hljs-meta, .doc-prose .hljs-type { color: oklch(0.75 0.09 300); }
+  .doc-prose .hljs-deletion { color: oklch(0.72 0.15 25); }
+  .doc-prose .hljs-addition { color: oklch(0.8 0.1 145); }
+
+  @media print {
+    .doc-prose pre { white-space: pre-wrap; word-break: break-word; }
+    .doc-prose .code-copy, .doc-prose .heading-anchor { display: none; }
+  }
+}

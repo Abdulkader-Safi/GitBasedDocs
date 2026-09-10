@@ -8,14 +8,21 @@ import { ThemeToggle } from "@/components/chrome/theme-toggle"
 export function TopBar({
   variant = "reader",
   email,
+  lead,
+  start,
   children,
 }: {
   variant?: "reader" | "admin"
   email?: string | null
+  // Before the wordmark, e.g. the mobile menu button.
+  lead?: React.ReactNode
+  // After the wordmark, e.g. the project switcher.
+  start?: React.ReactNode
   children?: React.ReactNode
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-background px-6">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-4 border-b border-border bg-background px-4 sm:px-6 print:hidden">
+      {lead}
       <Link
         href={variant === "admin" ? "/admin" : "/"}
         className="flex items-center gap-2 font-mono text-sm font-medium text-foreground"
@@ -23,6 +30,13 @@ export function TopBar({
         <IconBook size={18} />
         GitBasedDocs
       </Link>
+
+      {start && (
+        <>
+          <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
+          {start}
+        </>
+      )}
 
       {variant === "admin" && (
         <span className="flex items-center gap-1.5 bg-muted px-2 py-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">

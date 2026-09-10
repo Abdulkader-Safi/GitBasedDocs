@@ -1,0 +1,37 @@
+import { and, eq, ne } from "drizzle-orm"
+
+import { getDb } from "@/lib/db"
+import { docPages } from "@/lib/db/schema"
+
+// Everything the sidebar needs, without page bodies. Deleted rows are kept
+// for restore hints and never shown; drafts are for admins only.
+export async function listProjectPages(projectId: string, includeDrafts: boolean) {
+  const db = await getDb()
+  return db
+    .select({
+      id: docPages.id,
+      path: docPages.path,
+      slug: docPages.slug,
+      title: docPages.title,
+      sortOrder: docPages.sortOrder,
+      isDraft: docPages.isDraft,
+      updatedAt: docPages.updatedAt,
+    })
+    .from(docPages)
+    .where(
+      and(
+        eq(docPages.projectId, projectId),
+        ne(docPages.status, "deleted"),
+        includeDrafts ? undefined : eq(docPages.isDraft, 0),
+      ),
+    )
+}
+
+export type ProjectPageSummary = Awaited<ReturnType<typeof listProjectPages>>[number]
+
+// The one page being read, body included.
+export async function getPage(id: string) {
+  const db = await getDb()
+  const [row] = await db.select().from(docPages).where(eq(docPages.id, id))
+  return row ?? null
+}

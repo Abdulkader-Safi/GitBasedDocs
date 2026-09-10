@@ -35,7 +35,7 @@ const MD = /\.mdx?$/
 const EXCERPT_MAX = 2000
 // Anything past this is a render problem, not an index problem. Skip the
 // fetch so one huge file cannot stall a whole run.
-const MAX_BLOB_BYTES = 2 * 1024 * 1024
+export const MAX_BLOB_BYTES = 2 * 1024 * 1024
 
 // "docs/acme/guides/auth.md" under "docs/acme" becomes "guides/auth".
 // The project's own index.md becomes "" so it can serve /p/{slug}.
@@ -84,6 +84,11 @@ export function orderFrom(data: Record<string, unknown>): number {
 
 export function isDraftFrom(data: Record<string, unknown>): boolean {
   return data.draft === true
+}
+
+export function descriptionFrom(data: Record<string, unknown>): string {
+  const d = data.description
+  return typeof d === "string" ? d.trim() : ""
 }
 
 // Longest matching repoPath wins, so a project nested inside another
@@ -246,9 +251,31 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       prior && prior.blobSha === entry.sha && prior.status === "active"
     if (unchangedBlob) continue
 
+    // Oversized files still get a row, with an empty body, so the viewer can
+    // show "This file is too large to render." instead of a 404.
     if ((entry.size ?? 0) > MAX_BLOB_BYTES) {
-      errors.push(`${entry.path}: file is too large to index.`)
-      if (prior) await markStale(prior.id)
+      const row = {
+        projectId: project.id,
+        path: entry.path,
+        slug: pageSlug(project.repoPath, entry.path),
+        title: titleFrom({}, "", entry.path),
+        sortOrder: 999,
+        excerpt: "",
+        content: "",
+        description: "",
+        size: entry.size ?? 0,
+        blobSha: entry.sha,
+        headSha,
+        status: "active",
+        isDraft: 0,
+        updatedAt: new Date(),
+      }
+      await db
+        .insert(docPages)
+        .values({ id: prior?.id ?? randomUUID(), ...row })
+        .onConflictDoUpdate({ target: [docPages.projectId, docPages.path], set: row })
+      if (prior) changed++
+      else added++
       continue
     }
 
@@ -277,6 +304,9 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       title: titleFrom(data, parsed.content, entry.path),
       sortOrder: orderFrom(data),
       excerpt: excerptFrom(parsed.content),
+      content: parsed.content,
+      description: descriptionFrom(data),
+      size: entry.size ?? Buffer.byteLength(raw),
       blobSha: entry.sha,
       headSha,
       status: "active",

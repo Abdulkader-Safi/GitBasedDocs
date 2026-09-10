@@ -118,6 +118,13 @@ export const docPages = sqliteTable(
     title: text("title").notNull(),
     sortOrder: integer("sort_order").notNull().default(999),
     excerpt: text("excerpt").notNull().default(""),
+    // Raw Markdown body (frontmatter stripped). Stored at sync time so a
+    // page load reads the DB and never calls GitHub.
+    content: text("content").notNull().default(""),
+    description: text("description").notNull().default(""),
+    // Blob size in bytes. Over the render cap the page shows "too large"
+    // instead of rendering, and content stays empty.
+    size: integer("size").notNull().default(0),
     blobSha: text("blob_sha"),
     headSha: text("head_sha"),
     status: text("status").notNull().default("active"),
