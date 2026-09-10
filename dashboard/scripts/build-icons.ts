@@ -7,7 +7,7 @@ const SRC = "/Users/safi/Documents/Cowork/Content/reicon-icons/outline"
 
 // app name -> reicon file name
 const ICONS: Record<string, string> = {
-  archive: "archive", arrowLeft: "arrow-left", arrowRight: "arrow-right",
+  archive: "archive", arrowDown: "arrow-down", arrowLeft: "arrow-left", arrowRight: "arrow-right",
   book: "book", branch: "branch-up", check: "check", chevronDown: "chevron-down",
   chevronRight: "chevron-right", clock: "clock", close: "x", command: "command",
   copy: "copy", edit: "edit-22", eye: "eye", eyeOff: "eye-off", file: "file",

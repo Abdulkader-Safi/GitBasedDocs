@@ -276,3 +276,10 @@
   }
   .doc-prose img[width] { height: auto; }
 }
+
+/* A search term, marked on the page a result opened. */
+@layer components {
+  .doc-prose mark.search-hit {
+    @apply bg-status-warning/30 text-foreground;
+  }
+}

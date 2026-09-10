@@ -18,6 +18,7 @@ import { Sidebar } from "@/components/viewer/sidebar"
 import { MobileNav } from "@/components/viewer/mobile-nav"
 import { ProjectSwitcher } from "@/components/viewer/project-switcher"
 import { Article } from "@/components/viewer/article"
+import { SearchPalette } from "@/components/viewer/search-palette"
 import { IconArrowLeft, IconArrowRight, IconClock, IconWarning } from "@/components/icons"
 
 const WARN_BYTES = 1024 * 1024
@@ -59,8 +60,16 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: `${doc.summary.title} · ${doc.project.name}` }
 }
 
-export default async function DocPage({ params }: { params: Params }) {
+export default async function DocPage({
+  params,
+  searchParams,
+}: {
+  params: Params
+  searchParams: Promise<{ q?: string }>
+}) {
   const { projectSlug, pageSlug = [] } = await params
+  // Set when arriving from a search result, so the page can mark the term.
+  const highlight = ((await searchParams).q ?? "").slice(0, 200)
   const doc = await loadDoc(projectSlug, pageSlug)
   if (!doc.session) redirect("/login")
   const userId = doc.session.user.id
@@ -91,7 +100,9 @@ export default async function DocPage({ params }: { params: Params }) {
         isAdmin={isAdmin}
         lead={<MobileNav>{sidebar}</MobileNav>}
         start={<ProjectSwitcher current={project} projects={visible} />}
-      />
+      >
+        <SearchPalette projectSlug={project.slug} projectName={project.name} />
+      </TopBar>
       <div className="flex flex-1">
         <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-60 shrink-0 self-start border-e border-border bg-sidebar md:flex xl:w-70 print:hidden">
           {sidebar}
@@ -221,7 +232,7 @@ export default async function DocPage({ params }: { params: Params }) {
           This file is too large to render.
         </p>
       ) : html ? (
-        <Article html={html} />
+        <Article html={html} highlight={highlight} />
       ) : (
         <p className="font-mono text-[13px] text-muted-foreground">This page is empty.</p>
       )}

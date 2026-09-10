@@ -5,7 +5,7 @@ priority: "high"
 assignee: "safi"
 dueDate: null
 created: "2026-09-09T11:36:01.000Z"
-modified: "2026-09-10T11:30:00.000Z"
+modified: "2026-09-10T12:00:00.000Z"
 labels: ["access", "security"]
 order: 16
 ---
@@ -44,3 +44,4 @@ Done (2026-09-10, access log): `checkProjectAccess` returns the same decision as
 
 Verified: a temporary viewer's requests to a project they are not in, a project that does not exist, and an image all returned the same 404, and the log recorded each with the right project (or "no such project"). The denied filter showed those four; the allowed filter showed the admin's own page open. The test account and its log rows were deleted afterwards. `lib/access/access.check.ts` now also covers `checkProjectAccess`.
 
+Update (2026-09-10): the search half of the first check is now verified on the search card. A non-member's search returns the same 404, and the attempt lands in the access log.

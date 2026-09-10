@@ -7,8 +7,44 @@ import { useEffect, useRef } from "react"
 // our own transforms (see lib/render/markdown.check.ts for the injection
 // cases). Copy buttons in it are plain markup; one delegated listener wires
 // them up.
-export function Article({ html }: { html: string }) {
+export function Article({ html, highlight = "" }: { html: string; highlight?: string }) {
   const ref = useRef<HTMLDivElement>(null)
+
+  // Arriving from a search result: mark every occurrence of the words and
+  // scroll to the first. Works on the rendered DOM, never on the HTML string.
+  useEffect(() => {
+    const root = ref.current
+    if (!root) return
+    for (const mark of root.querySelectorAll("mark.search-hit")) {
+      mark.replaceWith(document.createTextNode(mark.textContent ?? ""))
+    }
+    root.normalize()
+    const terms = highlight.toLowerCase().split(/\s+/).filter((t) => t.length > 1)
+    if (!terms.length) return
+    const pattern = new RegExp(`(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi")
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) =>
+        n.parentElement?.closest("button, .heading-anchor") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    })
+    const nodes: Text[] = []
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) nodes.push(n as Text)
+    for (const node of nodes) {
+      const parts = node.data.split(pattern)
+      if (parts.length < 2) continue
+      const frag = document.createDocumentFragment()
+      parts.forEach((part, i) => {
+        if (i % 2 === 1) {
+          const mark = document.createElement("mark")
+          mark.className = "search-hit"
+          mark.textContent = part
+          frag.append(mark)
+        } else if (part) frag.append(part)
+      })
+      node.replaceWith(frag)
+    }
+    root.querySelector("mark.search-hit")?.scrollIntoView({ block: "center" })
+  }, [html, highlight])
 
   useEffect(() => {
     const root = ref.current
