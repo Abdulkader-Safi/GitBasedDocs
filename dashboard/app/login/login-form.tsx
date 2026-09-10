@@ -6,16 +6,16 @@ import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { ErrorText, Field } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
-import { IconArrowRight, IconEye, IconEyeOff } from "@/components/icons"
+import { IconArrowRight } from "@/components/icons"
 
 export function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [show, setShow] = useState(false)
   const [remember, setRemember] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -57,25 +57,13 @@ export function LoginForm() {
         </Field>
 
         <Field label="Password" htmlFor="password">
-          <div className="relative">
-            <Input
-              id="password"
-              type={show ? "text" : "password"}
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pe-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShow((s) => !s)}
-              aria-label={show ? "Hide password" : "Show password"}
-              className="absolute inset-y-0 end-0 flex w-10 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
-            >
-              {show ? <IconEyeOff size={15} /> : <IconEye size={15} />}
-            </button>
-          </div>
+          <PasswordInput
+            id="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </Field>
 
         <Checkbox

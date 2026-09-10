@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { ErrorText, Field } from "@/components/ui/field"
 import { IconCheck, IconLock } from "@/components/icons"
 
@@ -61,13 +61,13 @@ export function PasswordForm({ forced }: { forced: boolean }) {
       </div>
 
       <Field label={forced ? "Current (temporary) password" : "Current password"} htmlFor="current">
-        <Input id="current" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
+        <PasswordInput id="current" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
       </Field>
-      <Field label="New password" htmlFor="next" hint="At least 10 characters. No other rules.">
-        <Input id="next" type="password" autoComplete="new-password" required value={next} onChange={(e) => setNext(e.target.value)} />
+      <Field label="New password" htmlFor="next" hint="At least 10 characters, not a common password, not your email name.">
+        <PasswordInput id="next" autoComplete="new-password" required value={next} onChange={(e) => setNext(e.target.value)} />
       </Field>
       <Field label="New password again" htmlFor="confirm">
-        <Input id="confirm" type="password" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        <PasswordInput id="confirm" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       </Field>
 
       {error && <ErrorText>{error}</ErrorText>}
