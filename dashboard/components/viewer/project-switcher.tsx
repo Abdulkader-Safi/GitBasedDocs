@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { cn } from "cn"
 
-import { pageHref } from "@/lib/render/markdown"
+import { pageHref } from "@/lib/render/paths"
 import type { ReaderProject } from "@/lib/projects/reader"
 import { IconCheck, IconChevronDown } from "@/components/icons"
 

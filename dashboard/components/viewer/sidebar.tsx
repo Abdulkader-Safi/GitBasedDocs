@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { cn } from "cn"
 
-import { pageHref } from "@/lib/render/markdown"
+import { pageHref } from "@/lib/render/paths"
 import { openFolders, type TreeNode } from "@/lib/viewer/tree"
 import {
   IconArrowLeft,

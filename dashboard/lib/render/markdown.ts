@@ -22,6 +22,12 @@ import type { ShikiTransformer } from "shiki"
 import { unified } from "unified"
 
 import { stripComments } from "./comments"
+import { pageHref } from "./paths"
+
+// ponytail: this module is server-only (it holds the whole pipeline). Client
+// components import pageHref from ./paths instead; an `import "server-only"`
+// guard would break the bun checks that run this file directly.
+export { pageHref }
 import { SKIP, visit } from "unist-util-visit"
 
 export interface RenderPage {
@@ -43,11 +49,6 @@ export interface RenderContext {
 
 const MD = /\.mdx?$/
 
-// Obsidian vaults are full of "My Note.md", so every segment gets encoded.
-export function pageHref(projectSlug: string, slug: string, hash = "") {
-  const path = slug ? `/${slug.split("/").map(encodeURIComponent).join("/")}` : ""
-  return `/p/${encodeURIComponent(projectSlug)}${path}${hash}`
-}
 
 // A stray % in a link would make decodeURI throw and take the whole page
 // render down with it. Fall back to the raw text instead.

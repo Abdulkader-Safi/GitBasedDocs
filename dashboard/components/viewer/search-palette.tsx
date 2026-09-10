@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "cn"
 
-import { pageHref } from "@/lib/render/markdown"
+import { pageHref } from "@/lib/render/paths"
 import {
   IconArrowDown,
   IconArrowRight,
