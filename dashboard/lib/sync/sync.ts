@@ -100,6 +100,12 @@ export function descriptionFrom(data: Record<string, unknown>): string {
   return typeof d === "string" ? d.trim() : ""
 }
 
+// Anything under a dot folder stays out: Obsidian's .trash keeps deleted
+// notes there, and .github, .obsidian and friends are tooling, not docs.
+export function isHiddenPath(path: string): boolean {
+  return path.split("/").some((segment) => segment.startsWith("."))
+}
+
 // Longest matching repoPath wins, so a project nested inside another
 // project's folder still claims its own files. An empty repoPath means the
 // whole repo, which is the shape when one repo holds one project's docs.
@@ -255,6 +261,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
   for (const entry of entries) {
     if (entry.type !== "blob") continue
     if (root && entry.path !== root && !entry.path.startsWith(`${root}/`)) continue
+    if (isHiddenPath(entry.path)) continue
     const isPage = MD.test(entry.path)
     if (!isPage && !mimeFor(entry.path)) continue
     const project = projectFor(activeProjects, entry.path)

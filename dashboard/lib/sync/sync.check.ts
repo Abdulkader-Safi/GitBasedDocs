@@ -4,6 +4,7 @@
 import assert from "node:assert/strict"
 
 import {
+  isHiddenPath,
   excerptFrom,
   isDraftFrom,
   orderFrom,
@@ -13,6 +14,12 @@ import {
 } from "./sync"
 
 // pageSlug: project index serves the landing route, everything else nests
+assert.equal(isHiddenPath(".trash/old note.md"), true, "Obsidian trash is never published")
+assert.equal(isHiddenPath("guides/.drafts/x.md"), true)
+assert.equal(isHiddenPath(".github/PULL_REQUEST_TEMPLATE.md"), true)
+assert.equal(isHiddenPath("guides/setup.md"), false)
+assert.equal(isHiddenPath("notes/v1.2.md"), false, "a dot inside a name is fine")
+
 assert.equal(pageSlug("docs/acme", "docs/acme/index.md"), "")
 assert.equal(pageSlug("docs/acme", "docs/acme/install.md"), "install")
 assert.equal(pageSlug("docs/acme", "docs/acme/guides/auth.md"), "guides/auth")
