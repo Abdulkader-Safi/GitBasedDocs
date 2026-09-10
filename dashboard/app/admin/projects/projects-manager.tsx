@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { cn } from "cn"
 
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ErrorText, Field } from "@/components/ui/field"
 import { PageHeader } from "@/components/ui/page-header"
@@ -231,11 +232,12 @@ export function ProjectsManager() {
     refresh()
   }
 
-  async function toggleArchive(p: Project) {
+  // Archiving lives in the admin danger zone; bringing a project back is safe.
+  async function restore(p: Project) {
     const res = await fetch(`/api/admin/projects/${p.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: p.isActive ? 0 : 1 }),
+      body: JSON.stringify({ isActive: 1 }),
     })
     if (res.ok) refresh()
   }
@@ -317,10 +319,17 @@ export function ProjectsManager() {
                         className={cn("transition-transform", open === p.id && "rotate-180")}
                       />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => toggleArchive(p)}>
-                      {p.isActive ? <IconArchive size={14} /> : <IconRefresh size={14} />}
-                      {p.isActive ? "Archive" : "Restore"}
-                    </Button>
+                    {p.isActive ? (
+                      <Link href="/admin#danger-zone" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                        <IconArchive size={14} />
+                        Archive
+                      </Link>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => restore(p)}>
+                        <IconRefresh size={14} />
+                        Restore
+                      </Button>
+                    )}
                   </div>
                 </div>
                 {open === p.id && <MembersPanel project={p} onChange={refresh} />}

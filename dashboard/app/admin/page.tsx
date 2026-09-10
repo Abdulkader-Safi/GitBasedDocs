@@ -13,6 +13,8 @@ import { intervalFromEnv } from "@/lib/sync/schedule"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatusBadge, type ConnectionStatus } from "@/components/ui/status-badge"
 import { SyncPanel } from "@/components/admin/sync-panel"
+import { DangerZone } from "@/components/admin/danger-zone"
+import { listAudit, PHRASES, PURGE_AFTER_DAYS } from "@/lib/admin/danger"
 import { IconArrowRight, IconFolder, IconRefresh, IconRepo, IconShieldCheck, IconUser } from "@/components/icons"
 
 function AdminCard({
@@ -52,12 +54,13 @@ function AdminCard({
 export default async function AdminPage() {
   await requireAdmin()
   const db = await getDb()
-  const [connection, projects, denied, people, [lastRun]] = await Promise.all([
+  const [connection, projects, denied, people, [lastRun], audit] = await Promise.all([
     getConnection(),
     listProjects(),
     deniedInLastDays(7),
     listUsers(),
     db.select().from(syncLogs).orderBy(desc(syncLogs.createdAt)).limit(1),
+    listAudit(),
   ])
   const admins = people.filter((u) => u.role === "admin" && u.isActive).length
 
@@ -136,6 +139,13 @@ export default async function AdminPage() {
           Link a repo on the GitHub connection page, then sync from here.
         </p>
       )}
+
+      <DangerZone
+        projects={projects.filter((p) => p.isActive).map((p) => ({ id: p.id, name: p.name, slug: p.slug }))}
+        audit={audit.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
+        purgeDays={PURGE_AFTER_DAYS}
+        phrases={PHRASES}
+      />
     </div>
   )
 }

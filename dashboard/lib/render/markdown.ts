@@ -400,7 +400,17 @@ export async function renderMarkdown(markdown: string, ctx: RenderContext): Prom
 // file misses and an unchanged one never re-renders. Bounded, oldest first.
 // Swap for a table if render cost ever shows up in traces.
 const CACHE_LIMIT = 300
-const cache = new Map<string, string>()
+// On globalThis so every route bundle shares one cache, and "clear cache"
+// from an API route empties the one the page routes read.
+const g = globalThis as { __renderCache?: Map<string, string> }
+const cache = (g.__renderCache ??= new Map<string, string>())
+
+// Returns how many entries were dropped.
+export function clearRenderCache(): number {
+  const n = cache.size
+  cache.clear()
+  return n
+}
 
 export async function renderCached(
   cacheKey: string,

@@ -152,6 +152,17 @@ export const syncLogs = sqliteTable("sync_logs", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 })
 
+// One line per danger action. The email is copied in so the line still
+// reads right after the account is gone.
+export const auditLogs = sqliteTable("audit_logs", {
+  id: text("id").primaryKey(),
+  actorId: text("actor_id"),
+  actorEmail: text("actor_email").notNull(),
+  action: text("action").notNull(),
+  detail: text("detail").notNull().default(""),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+})
+
 export const assets = sqliteTable(
   "assets",
   {

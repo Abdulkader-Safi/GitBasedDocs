@@ -96,6 +96,9 @@ export const authOptions: NextAuthOptions = {
             row?.sessionsRevokedAt != null && loginAt < row.sessionsRevokedAt.getTime()
           if (row && row.isActive && !revoked) {
             session.user.id = row.id
+            // From the row, so the top bar and audit lines follow edits.
+            session.user.name = row.name
+            session.user.email = row.email
             session.user.role = row.role
             session.user.mustChangePassword = Boolean(row.mustChangePassword)
             session.user.active = true
