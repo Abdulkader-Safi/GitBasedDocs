@@ -100,6 +100,18 @@ assert.match(note, /<div class="callout-label">NOTE<\/div>/)
 assert.match(note, /Tokens are scoped to one project\./)
 assert.doesNotMatch(note, /\[!NOTE\]/)
 assert.match(await r("> [!caution]\n> careful"), /callout-warning/)
+// Obsidian: every type maps to a look, custom titles, folding
+assert.match(await r("> [!bug]\n> it breaks"), /callout callout-danger/)
+assert.match(await r("> [!quote]\n> said"), /callout callout-quote/)
+assert.match(await r("> [!whatever]\n> x"), /callout callout-note/, "unknown type falls back to a note")
+assert.doesNotMatch(await r("> [!whatever]\n> x"), /\[!whatever\]/)
+const titled = await r("> [!tip] Before you start\n> Install bun.")
+assert.match(titled, /<div class="callout-label callout-title">Before you start<\/div>/)
+assert.match(titled, /<p>Install bun\.<\/p>/)
+const folded = await r("> [!faq]- Why square corners?\n> Because.")
+assert.match(folded, /<details class="callout callout-warning"><summary class="callout-label callout-title">Why square corners\?<\/summary>/)
+assert.match(await r("> [!faq]+ Open\n> x"), /<details class="callout callout-warning" open>/)
+assert.match(await r("> [!info] Title only"), /callout-title">Title only</)
 // a plain quote stays a blockquote
 assert.match(await r("> just a quote"), /<blockquote>/)
 

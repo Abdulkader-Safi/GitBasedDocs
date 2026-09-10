@@ -250,12 +250,26 @@
   .doc-prose .callout-label { @apply font-mono text-[11px] font-medium tracking-[0.08em]; }
   .doc-prose .callout-body { @apply text-[15px] leading-relaxed text-foreground; }
   .doc-prose .callout-body > * + * { margin-top: 0.5rem; }
-  .doc-prose .callout-note { @apply border-foreground; }
-  .doc-prose .callout-note .callout-label { @apply text-foreground; }
+  .doc-prose .callout-note { @apply border-primary; }
+  .doc-prose .callout-note .callout-label { @apply text-primary; }
   .doc-prose .callout-tip { @apply border-status-success; }
   .doc-prose .callout-tip .callout-label { @apply text-status-success; }
   .doc-prose .callout-warning { @apply border-status-warning; }
   .doc-prose .callout-warning .callout-label { @apply text-status-warning; }
+  .doc-prose .callout-danger { @apply border-destructive; }
+  .doc-prose .callout-danger .callout-label { @apply text-destructive; }
+  .doc-prose .callout-quote { @apply border-border; }
+  .doc-prose .callout-quote .callout-label { @apply text-muted-foreground; }
+  /* A custom title reads as a sentence, not a mono caps label. */
+  .doc-prose .callout-title { @apply font-sans text-[15px] font-medium tracking-normal normal-case; }
+  /* Folding callouts: the title is the toggle. */
+  .doc-prose details.callout > summary { @apply flex cursor-pointer list-none items-center gap-2; }
+  .doc-prose details.callout > summary::-webkit-details-marker { display: none; }
+  .doc-prose details.callout > summary::before {
+    content: "+"; @apply w-3 font-mono text-muted-foreground;
+  }
+  .doc-prose details.callout[open] > summary::before { content: "-"; }
+  .doc-prose details.callout:not([open]) { @apply gap-0; }
 
   /* Shiki colours arrive as inline spans. Lines stretch to the full scroll
      width so highlighted and diff lines colour edge to edge. */

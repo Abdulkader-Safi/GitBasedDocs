@@ -19,7 +19,7 @@ Steps, one commit each:
 - [x] Shiki code highlighting (replaces highlight.js): titles, `{1,3}` line ranges, `[!code ++]` diff marks, fallback for unknown languages.
 - [x] Mermaid diagrams, loaded in the browser only on pages that have one, strict security, redrawn on theme change.
 - [x] KaTeX math, inline and block, rendered on the server.
-- [ ] Obsidian callouts: all types, custom titles, folding.
+- [x] Obsidian callouts: all types, custom titles, folding.
 - [ ] `==highlights==`, `%%comments%%` (also kept out of search), safe inline HTML.
 
 Done when:

@@ -299,15 +299,25 @@ function splitWikiLinks(
 }
 
 // ---------------------------------------------------------------------------
-// GitHub alert blockquotes: > [!NOTE], [!TIP], [!WARNING] (plus IMPORTANT and
-// CAUTION, folded into note and warning).
-const ALERTS: Record<string, "note" | "tip" | "warning"> = {
-  NOTE: "note",
-  TIP: "tip",
-  IMPORTANT: "note",
-  WARNING: "warning",
-  CAUTION: "warning",
+// Callouts, GitHub and Obsidian style:
+//   > [!NOTE]                      GitHub's five
+//   > [!tip] Before you start      Obsidian type with a custom title
+//   > [!faq]- Folded question      "-" starts closed, "+" starts open
+// Every Obsidian type and alias maps to one of five looks. An unknown type
+// becomes a note rather than leaving "[!type]" on the page.
+type CalloutTone = "note" | "tip" | "warning" | "danger" | "quote"
+const CALLOUT_TONES: Record<string, CalloutTone> = {}
+for (const [tone, names] of Object.entries({
+  note: "note info todo abstract summary tldr important",
+  tip: "tip hint success check done",
+  warning: "warning caution attention question help faq",
+  danger: "danger error failure fail missing bug",
+  quote: "quote cite example",
+}) as [CalloutTone, string][]) {
+  for (const name of names.split(" ")) CALLOUT_TONES[name] = tone
 }
+
+const CALLOUT_MARK = /^\s*\[!([\w-]+)\]([+-]?)[ \t]*([^\n]*)\n?/
 
 function rehypeCallouts() {
   return (tree: Root) => {
@@ -318,9 +328,14 @@ function rehypeCallouts() {
       )
       const firstText = firstP?.children[0]
       if (!firstP || firstText?.type !== "text") return
-      const m = firstText.value.match(/^\s*\[!(\w+)\]\s*/)
-      const kind = m ? ALERTS[m[1].toUpperCase()] : undefined
-      if (!m || !kind) return
+      const m = firstText.value.match(CALLOUT_MARK)
+      if (!m) return
+      const type = m[1].toLowerCase()
+      const tone = CALLOUT_TONES[type] ?? "note"
+      const fold = m[2]
+      // ponytail: the title is the plain text after the marker on its line;
+      // a title that starts with bold or a link lands in the body instead.
+      const title = m[3].trim()
 
       firstText.value = firstText.value.slice(m[0].length)
       if (!firstText.value) {
@@ -332,21 +347,21 @@ function rehypeCallouts() {
       const body = node.children.filter(
         (c) => !(c === firstP && firstP.children.length === 0),
       )
-      node.tagName = "div"
-      node.properties = { className: ["callout", `callout-${kind}`], role: "note" }
+      const label: Element = {
+        type: "element",
+        tagName: fold ? "summary" : "div",
+        properties: { className: title ? ["callout-label", "callout-title"] : ["callout-label"] },
+        children: [{ type: "text", value: title || type.toUpperCase() }],
+      }
+      node.tagName = fold ? "details" : "div"
+      node.properties = {
+        className: ["callout", `callout-${tone}`],
+        ...(fold ? {} : { role: "note" }),
+        ...(fold === "+" ? { open: true } : {}),
+      }
       node.children = [
-        {
-          type: "element",
-          tagName: "div",
-          properties: { className: ["callout-label"] },
-          children: [{ type: "text", value: m[1].toUpperCase() }],
-        },
-        {
-          type: "element",
-          tagName: "div",
-          properties: { className: ["callout-body"] },
-          children: body,
-        },
+        label,
+        { type: "element", tagName: "div", properties: { className: ["callout-body"] }, children: body },
       ]
     })
   }
@@ -513,7 +528,7 @@ export function clearRenderCache(): number {
 
 // Bump when the pipeline's output changes, so cached HTML from the old
 // pipeline is never served.
-const RENDER_VERSION = 5
+const RENDER_VERSION = 6
 
 export async function renderCached(
   pageKey: string,
