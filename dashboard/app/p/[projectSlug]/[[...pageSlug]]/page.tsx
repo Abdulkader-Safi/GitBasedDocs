@@ -1,6 +1,7 @@
 import { cache } from "react"
 import { createHash } from "node:crypto"
 import Link from "next/link"
+import { cn } from "cn"
 import { notFound, redirect } from "next/navigation"
 import { after } from "next/server"
 import type { Metadata } from "next"
@@ -8,9 +9,19 @@ import type { Metadata } from "next"
 import { auth } from "@/lib/auth/session"
 import { checkProjectAccess, logAccess } from "@/lib/access/access"
 import { listVisibleProjects } from "@/lib/projects/reader"
-import { getPage, listProjectAssetPaths, listProjectPages } from "@/lib/viewer/pages"
+import {
+  getPage,
+  listProjectAssetPaths,
+  listProjectPages,
+} from "@/lib/viewer/pages"
 import { buildTree, landingSlug, neighbours, trail } from "@/lib/viewer/tree"
-import { pageHref, renderCached } from "@/lib/render/markdown"
+import {
+  outline,
+  pageHref,
+  renderCached,
+  type OutlineItem,
+} from "@/lib/render/markdown"
+import { getConnection } from "@/lib/github/connection"
 import { MAX_BLOB_BYTES } from "@/lib/sync/sync"
 import { relativeTime } from "@/lib/format"
 import { TopBar } from "@/components/chrome/top-bar"
@@ -19,8 +30,15 @@ import { MobileNav } from "@/components/viewer/mobile-nav"
 import { ProjectSwitcher } from "@/components/viewer/project-switcher"
 import { Article } from "@/components/viewer/article"
 import { SearchPalette } from "@/components/viewer/search-palette"
+import { Outline } from "@/components/viewer/outline"
 import { Chip } from "@/components/ui/status-badge"
-import { IconArrowLeft, IconArrowRight, IconClock, IconWarning } from "@/components/icons"
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconClock,
+  IconRepo,
+  IconWarning,
+} from "@/components/icons"
 
 const WARN_BYTES = 1024 * 1024
 
@@ -40,9 +58,13 @@ const loadDoc = cache(async (projectSlug: string, slugParts: string[]) => {
   const session = await auth()
   if (!session) return { session: null } as const
 
-  const { project, allowed } = await checkProjectAccess(session.user, projectSlug)
+  const { project, allowed } = await checkProjectAccess(
+    session.user,
+    projectSlug
+  )
   // Keep the id of a project the person was refused, for the admin log only.
-  if (!project || !allowed) return { session, missing: true, attempted: project?.id ?? null } as const
+  if (!project || !allowed)
+    return { session, missing: true, attempted: project?.id ?? null } as const
 
   const isAdmin = session.user.role === "admin"
   const pages = await listProjectPages(project.id, isAdmin)
@@ -51,13 +73,26 @@ const loadDoc = cache(async (projectSlug: string, slugParts: string[]) => {
   const slug = slugParts.length ? wanted : landingSlug(tree)
   const summary = slug === null ? null : pages.find((p) => p.slug === slug)
 
-  return { session, project, isAdmin, pages, tree, slug: slug ?? "", summary } as const
+  return {
+    session,
+    project,
+    isAdmin,
+    pages,
+    tree,
+    slug: slug ?? "",
+    summary,
+  } as const
 })
 
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Params
+}): Promise<Metadata> {
   const { projectSlug, pageSlug = [] } = await params
   const doc = await loadDoc(projectSlug, pageSlug)
-  if (!doc.session || "missing" in doc || !doc.summary) return { title: "Page not found" }
+  if (!doc.session || "missing" in doc || !doc.summary)
+    return { title: "Page not found" }
   return { title: `${doc.summary.title} · ${doc.project.name}` }
 }
 
@@ -80,7 +115,14 @@ export default async function DocPage({
   // denied line in the admin access log.
   if ("missing" in doc) {
     const attempted = doc.attempted ?? null
-    after(() => logAccess({ userId, projectId: attempted, path: requested, allowed: false }))
+    after(() =>
+      logAccess({
+        userId,
+        projectId: attempted,
+        path: requested,
+        allowed: false,
+      })
+    )
     notFound()
   }
 
@@ -95,7 +137,7 @@ export default async function DocPage({
       activeSlug={summary ? slug : ""}
     />
   )
-  const shell = (content: React.ReactNode) => (
+  const shell = (content: React.ReactNode, toc: OutlineItem[] = []) => (
     <div className="flex min-h-svh flex-col">
       <TopBar
         email={session.user.email}
@@ -110,7 +152,20 @@ export default async function DocPage({
           {sidebar}
         </aside>
         <main className="min-w-0 flex-1 px-6 py-10 xl:px-10">
-          <div className="mx-auto w-full max-w-[672px]">{content}</div>
+          <div
+            className={cn(
+              "mx-auto flex w-full max-w-[672px] gap-12",
+              toc.length > 1 && "xl:max-w-[944px]"
+            )}
+          >
+            <div className="w-full max-w-[672px] min-w-0">{content}</div>
+            {/* Only worth a column with two or more headings to jump between. */}
+            {toc.length > 1 && (
+              <aside className="sticky top-24 hidden max-h-[calc(100svh-8rem)] w-56 shrink-0 self-start overflow-y-auto xl:block print:hidden">
+                <Outline items={toc} />
+              </aside>
+            )}
+          </div>
         </main>
       </div>
     </div>
@@ -122,16 +177,19 @@ export default async function DocPage({
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-2xl font-semibold">{project.name}</h1>
         <p className="text-[15px] text-muted-foreground">
-          No pages yet. Push Markdown to the repo and it shows up here after the next sync.
+          No pages yet. Push Markdown to the repo and it shows up here after the
+          next sync.
         </p>
-      </div>,
+      </div>
     )
   }
 
   if (!summary) notFound()
   const page = await getPage(summary.id)
   if (!page) notFound()
-  after(() => logAccess({ userId, projectId: project.id, path: requested, allowed: true }))
+  after(() =>
+    logAccess({ userId, projectId: project.id, path: requested, allowed: true })
+  )
 
   const tooLarge = page.size > MAX_BLOB_BYTES
   if (page.size > WARN_BYTES) {
@@ -146,7 +204,10 @@ export default async function DocPage({
   const generation = [
     pages.length,
     Math.max(...pages.map((p) => p.updatedAt.getTime())),
-    createHash("sha1").update([...assetPaths].sort().join("\n")).digest("hex").slice(0, 10),
+    createHash("sha1")
+      .update([...assetPaths].sort().join("\n"))
+      .digest("hex")
+      .slice(0, 10),
   ].join(":")
   const html =
     tooLarge || !page.content.trim()
@@ -160,49 +221,65 @@ export default async function DocPage({
             pagePath: page.path,
             pages: pages.map((p) => ({ path: p.path, slug: p.slug })),
             assets: assetPaths,
-          },
+          }
         )
 
   const crumbs = trail(tree, slug)
+  const toc = html ? outline(html) : []
+  // Writers (admins, editors) get a link to the source file. Readers may
+  // not have access to the private repo, so they do not.
+  const connection =
+    session.user.role === "viewer" ? null : await getConnection()
+  const githubUrl = connection
+    ? `https://github.com/${connection.owner}/${connection.repo}/blob/${encodeURIComponent(connection.branch)}/${page.path.split("/").map(encodeURIComponent).join("/")}`
+    : null
   const { prev, next } = neighbours(tree, slug)
 
   return shell(
     <article className="flex flex-col">
-      <nav aria-label="Breadcrumb" className="font-mono text-[13px] text-muted-foreground">
-        <ol className="flex flex-wrap items-center gap-x-1.5">
-          <li>
-            <Link href={pageHref(project.slug, "")} className="hover:text-foreground">
-              {project.name}
-            </Link>
-          </li>
-          {crumbs.map((c) => (
-            <li key={c.title} className="flex items-center gap-1.5">
-              <span aria-hidden>/</span>
-              {c.slug !== null ? (
-                <Link href={pageHref(project.slug, c.slug)} className="hover:text-foreground">
-                  {c.title}
-                </Link>
-              ) : (
-                <span>{c.title}</span>
-              )}
+      {pageSlug.length > 0 && (
+        <nav
+          aria-label="Breadcrumb"
+          className="font-mono text-[13px] text-muted-foreground"
+        >
+          <ol className="flex flex-wrap items-center gap-x-1.5">
+            <li>
+              <Link
+                href={pageHref(project.slug, "")}
+                className="hover:text-foreground"
+              >
+                {project.name}
+              </Link>
             </li>
-          ))}
-          {slug !== "" && (
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden>/</span>
-              <span aria-current="page" className="text-foreground">{page.title}</span>
-            </li>
-          )}
-        </ol>
-      </nav>
+            {crumbs.map((c) => (
+              <li key={c.title} className="flex items-center gap-1.5">
+                <span aria-hidden>/</span>
+                {c.slug !== null ? (
+                  <Link
+                    href={pageHref(project.slug, c.slug)}
+                    className="hover:text-foreground"
+                  >
+                    {c.title}
+                  </Link>
+                ) : (
+                  <span>{c.title}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-3">
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3",
+          pageSlug.length > 0 && "mt-3.5"
+        )}
+      >
         <h1 className="font-heading text-2xl leading-tight font-semibold text-foreground">
           {page.title}
         </h1>
-        {page.isDraft === 1 && (
-          <Chip tone="warning">Draft</Chip>
-        )}
+        {page.isDraft === 1 && <Chip tone="warning">Draft</Chip>}
       </div>
 
       {page.description && (
@@ -216,6 +293,17 @@ export default async function DocPage({
           <IconClock size={12} />
           Updated {relativeTime(page.updatedAt)}
         </span>
+        {githubUrl && (
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="flex items-center gap-1.5 hover:text-foreground"
+          >
+            <IconRepo size={12} />
+            View on GitHub
+          </a>
+        )}
         {isAdmin && page.status === "stale" && (
           <span className="flex items-center gap-1.5 text-status-warning">
             <IconWarning size={12} />
@@ -234,11 +322,16 @@ export default async function DocPage({
       ) : html ? (
         <Article html={html} highlight={highlight} />
       ) : (
-        <p className="font-mono text-[13px] text-muted-foreground">This page is empty.</p>
+        <p className="font-mono text-[13px] text-muted-foreground">
+          This page is empty.
+        </p>
       )}
 
       {(prev || next) && (
-        <nav aria-label="Pages" className="mt-12 grid gap-4 border-t border-border pt-5 sm:grid-cols-2 print:hidden">
+        <nav
+          aria-label="Pages"
+          className="mt-12 grid gap-4 border-t border-border pt-5 sm:grid-cols-2 print:hidden"
+        >
           {prev ? (
             <Link
               href={pageHref(project.slug, prev.slug)}
@@ -272,5 +365,6 @@ export default async function DocPage({
         </nav>
       )}
     </article>,
+    toc
   )
 }

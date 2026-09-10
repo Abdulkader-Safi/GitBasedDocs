@@ -120,4 +120,17 @@ assert.match(h, /class="heading-anchor"/)
 assert.match(await r("| a | b |\n|---|---|\n| 1 | 2 |"), /<table>/)
 assert.match(await r("- [x] done\n- [ ] todo"), /type="checkbox"/)
 
+// --- outline ---------------------------------------------------------------------
+{
+  const { outline } = await import("./markdown")
+  const html = await r("# Top\n\n## Install `bun`\n\n### Step *one*\n\n## Install `bun`\n\n#### deep\n\n## Q&A <3")
+  assert.deepEqual(outline(html), [
+    { id: "install-bun", text: "Install bun", depth: 2 },
+    { id: "step-one", text: "Step one", depth: 3 },
+    { id: "install-bun-1", text: "Install bun", depth: 2 },
+    { id: "qa-3", text: "Q&A <3", depth: 2 },
+  ], "h2 and h3 only, anchor text and tags gone, entities decoded, duplicate ids kept apart")
+  assert.deepEqual(outline("<p>no headings</p>"), [])
+}
+
 console.log("markdown checks ok")

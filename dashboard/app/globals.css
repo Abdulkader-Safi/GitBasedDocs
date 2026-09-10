@@ -179,8 +179,10 @@
   .doc-prose .heading-anchor:focus-visible { opacity: 1; }
 
   .doc-prose a {
-    @apply text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground;
+    @apply text-primary underline decoration-primary/35 underline-offset-4 hover:decoration-primary;
   }
+  /* Heading anchors keep their own quiet look. */
+  .doc-prose a.heading-anchor { @apply text-muted-foreground no-underline; }
   .doc-prose .wikilink-unresolved {
     @apply text-muted-foreground underline decoration-dashed decoration-border underline-offset-4;
   }

@@ -86,10 +86,10 @@ function Nodes({
                 aria-current={active ? "page" : undefined}
                 style={indent}
                 className={cn(
-                  "flex items-center gap-1.5 py-1.5 pe-2 font-mono text-[13px]",
+                  "flex items-center gap-1.5 border-s-2 py-1.5 pe-2 font-mono text-[13px]",
                   active
-                    ? "bg-accent font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                    ? "border-primary bg-accent font-medium text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                 )}
               >
                 <IconFile size={14} className="shrink-0" />
@@ -106,8 +106,10 @@ function Nodes({
               <summary
                 style={indent}
                 className={cn(
-                  "flex cursor-pointer list-none items-center gap-1.5 py-1.5 pe-2 font-mono text-[13px] font-medium select-none [&::-webkit-details-marker]:hidden",
-                  activeIndex ? "bg-accent text-foreground" : "text-foreground hover:bg-accent/60",
+                  "flex cursor-pointer list-none items-center gap-1.5 border-s-2 py-1.5 pe-2 font-mono text-[13px] font-medium select-none [&::-webkit-details-marker]:hidden",
+                  activeIndex
+                    ? "border-primary bg-accent text-foreground"
+                    : "border-transparent text-foreground hover:bg-accent/60",
                 )}
               >
                 <IconChevronRight

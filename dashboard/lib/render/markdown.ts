@@ -424,3 +424,33 @@ export async function renderCached(
   if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value as string)
   return html
 }
+
+export interface OutlineItem {
+  id: string
+  text: string
+  depth: 2 | 3
+}
+
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }
+function decodeEntities(s: string) {
+  return s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) =>
+    e[0] === "#"
+      ? String.fromCodePoint(e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : Number(e.slice(1)))
+      : (ENTITIES[e.toLowerCase()] ?? m),
+  )
+}
+
+// h2 and h3 of rendered HTML, for the "On this page" list. Reads our own
+// renderer's output (id from rehype-slug, anchor from autolink), not
+// arbitrary HTML.
+export function outline(html: string): OutlineItem[] {
+  const items: OutlineItem[] = []
+  for (const m of html.matchAll(/<h([23]) id="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g)) {
+    const text = m[3]
+      .replace(/<a class="heading-anchor"[\s\S]*?<\/a>/g, "")
+      .replace(/<[^>]+>/g, "")
+      .trim()
+    if (text) items.push({ id: m[2], text: decodeEntities(text), depth: Number(m[1]) as 2 | 3 })
+  }
+  return items
+}
