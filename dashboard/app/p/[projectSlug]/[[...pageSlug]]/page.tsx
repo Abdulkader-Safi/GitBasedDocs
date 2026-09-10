@@ -238,15 +238,13 @@ export default async function DocPage({
 
   const crumbs = trail(tree, slug)
   const toc = html ? outline(html) : []
-  // Writers (admins, editors) get a link to the source file. Readers may
-  // not have access to the private repo, so they do not.
-  const connection =
-    session.user.role === "viewer" ? null : await getConnection()
+  // Repo details (the commit and the link to the file) are for admins only.
+  // Everyone else sees who changed the page and when, nothing that points
+  // into the private repo.
+  const connection = isAdmin ? await getConnection() : null
   const githubUrl = connection
     ? `https://github.com/${connection.owner}/${connection.repo}/blob/${encodeURIComponent(connection.branch)}/${page.path.split("/").map(encodeURIComponent).join("/")}`
     : null
-  // Writers get the commit as a link; viewers see the short sha only, since
-  // the repo is private.
   const commitUrl =
     connection && page.lastCommitSha
       ? `https://github.com/${connection.owner}/${connection.repo}/commit/${page.lastCommitSha}`
@@ -318,24 +316,18 @@ export default async function DocPage({
           Updated {relativeTime(page.lastCommitAt ?? page.updatedAt)}
           {page.lastCommitAuthor && <> by {page.lastCommitAuthor}</>}
         </span>
-        {page.lastCommitSha &&
-          (commitUrl ? (
-            <a
-              href={commitUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              title={page.lastCommitMessage || undefined}
-              className="flex items-center gap-1.5 hover:text-foreground"
-            >
-              <IconBranch size={12} />
-              {page.lastCommitSha.slice(0, 7)}
-            </a>
-          ) : (
-            <span className="flex items-center gap-1.5" title={page.lastCommitMessage || undefined}>
-              <IconBranch size={12} />
-              {page.lastCommitSha.slice(0, 7)}
-            </span>
-          ))}
+        {commitUrl && page.lastCommitSha && (
+          <a
+            href={commitUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            title={page.lastCommitMessage || undefined}
+            className="flex items-center gap-1.5 hover:text-foreground"
+          >
+            <IconBranch size={12} />
+            {page.lastCommitSha.slice(0, 7)}
+          </a>
+        )}
         {githubUrl && (
           <a
             href={githubUrl}

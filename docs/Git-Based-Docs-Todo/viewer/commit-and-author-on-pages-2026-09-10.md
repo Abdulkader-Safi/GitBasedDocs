@@ -24,3 +24,5 @@ What shipped:
 - Migration 0009 adds `last_commit_sha`, `last_commit_author`, `last_commit_at`, `last_commit_message` to `doc_pages` and clears blob shas once so every page records its commit. After it ran, 11 of 11 pages had one.
 - Meta line: "Updated 1 hour ago by Abdulkader Safi · f5e132e"; the time is the commit's, with the sync time as fallback. The sha links to the commit for admins and editors and shows the commit's first line on hover.
 - `reading-docs.md` in the vault describes it, plus the page width and outline buttons.
+
+Changed after review: Safi wants repo details for admins only. The commit id and "View on GitHub" now show for admins; editors and viewers see "Updated ... by <author>" and nothing that links into the repo. Checked over HTTP with an admin, an editor and a viewer.
