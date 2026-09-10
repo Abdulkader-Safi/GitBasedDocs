@@ -14,6 +14,7 @@ const ctx: RenderContext = {
     { path: "install.md", slug: "install" },
     { path: "Welcome.md", slug: "Welcome" },
   ],
+  assets: ["guides/img/diagram.png", "guides/img/a b.png", "attachments/Screen Shot.png", "files/spec.pdf"],
 }
 const r = (md: string, c: RenderContext = ctx) => renderMarkdown(md, c)
 
@@ -61,7 +62,18 @@ assert.doesNotMatch(await r("[b](../other/b.md)", nested), /href=/)
 
 // --- images go through the asset route, never a raw GitHub URL ------------
 assert.match(await r("![d](./img/diagram.png)"), /src="\/api\/assets\/acme\/guides\/img\/diagram.png"/)
-assert.match(await r("![d](img/a b.png)".replace(" ", "%20")), /src="\/api\/assets\/acme\/guides\/img\/a%20b.png"/)
+assert.match(await r("![d](img/a%20b.png)"), /src="\/api\/assets\/acme\/guides\/img\/a%20b.png"/)
+// not cached: an alt box with the alt text, and no request at all
+const missing = await r("![Architecture](./img/nope.png)")
+assert.match(missing, /<span class="asset-missing" role="img" aria-label="Image not found: Architecture">Image not found: Architecture<\/span>/)
+assert.doesNotMatch(missing, /<img/)
+assert.match(await r("![](./img/nope.png)"), /Image not found: nope.png/, "no alt falls back to the file name")
+// outside the project: also a box, never a URL
+assert.doesNotMatch(await r("![x](../../../etc/passwd.png)"), /<img|src=/)
+// a link to a PDF in the repo goes through the asset route
+assert.match(await r("[spec](../files/spec.pdf)"), /href="\/api\/assets\/acme\/files\/spec.pdf"/)
+// a stray % in a link must not crash the render
+assert.match(await r("[bad](100%.md) and ![bad](50%.png)"), /bad/)
 
 // --- Obsidian wikilinks ---------------------------------------------------
 assert.match(await r("see [[Welcome]]"), /<a href="\/p\/acme\/Welcome" class="wikilink">Welcome<\/a>/)
@@ -70,8 +82,16 @@ assert.match(await r("see [[install#Setup Steps]]"), /href="\/p\/acme\/install#s
 assert.match(await r("try [[create a link]] now"), /<span class="wikilink wikilink-unresolved"[^>]*>create a link<\/span>/)
 // never inside code
 assert.match(await r("`[[Welcome]]`"), /<code>\[\[Welcome\]\]<\/code>/)
-// embeds are left alone, not turned into links
-assert.doesNotMatch(await r("![[Welcome]]"), /class="wikilink"/)
+// Obsidian image embeds resolve by file name anywhere in the project
+const emb = await r("![[Screen Shot.png]]")
+assert.match(emb, /<img src="\/api\/assets\/acme\/attachments\/Screen%20Shot.png" alt="Screen Shot.png" loading="lazy">/)
+assert.match(await r("![[diagram.png|300]]"), /width="300"/)
+assert.match(await r("![[diagram.png|300x200]]"), /width="300" height="200"/)
+assert.match(await r("![[guides/img/diagram.png]]"), /src="\/api\/assets\/acme\/guides\/img\/diagram.png"/)
+assert.match(await r("![[missing.png]]"), /Image not found: missing.png/)
+// a note embed links to the note rather than transcluding it
+assert.match(await r("![[Welcome]]"), /<a href="\/p\/acme\/Welcome" class="wikilink">Welcome<\/a>/)
+assert.doesNotMatch(await r("![[Welcome]]"), /!</, "the ! is consumed, not left dangling")
 
 // --- callouts --------------------------------------------------------------
 const note = await r("> [!NOTE]\n> Tokens are scoped to one project.")

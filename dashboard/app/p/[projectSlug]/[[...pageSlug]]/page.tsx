@@ -1,4 +1,5 @@
 import { cache } from "react"
+import { createHash } from "node:crypto"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import type { Metadata } from "next"
@@ -6,7 +7,7 @@ import type { Metadata } from "next"
 import { auth } from "@/lib/auth/session"
 import { requireProjectAccess } from "@/lib/access/access"
 import { listVisibleProjects } from "@/lib/projects/reader"
-import { getPage, listProjectPages } from "@/lib/viewer/pages"
+import { getPage, listProjectAssetPaths, listProjectPages } from "@/lib/viewer/pages"
 import { buildTree, landingSlug, neighbours, trail } from "@/lib/viewer/tree"
 import { pageHref, renderCached } from "@/lib/render/markdown"
 import { MAX_BLOB_BYTES } from "@/lib/sync/sync"
@@ -114,9 +115,16 @@ export default async function DocPage({ params }: { params: Params }) {
     console.warn(`[viewer] large page ${page.path} (${page.size} bytes)`)
   }
 
-  // Any page added, changed or removed in the project changes this, so
-  // wikilinks that were unresolved re-render once their target appears.
-  const generation = `${pages.length}:${Math.max(...pages.map((p) => p.updatedAt.getTime()))}`
+  const assetPaths = await listProjectAssetPaths(project.id)
+
+  // Any page or asset added, changed or removed in the project changes this,
+  // so an unresolved wikilink or a missing image box re-renders once its
+  // target appears.
+  const generation = [
+    pages.length,
+    Math.max(...pages.map((p) => p.updatedAt.getTime())),
+    createHash("sha1").update([...assetPaths].sort().join("\n")).digest("hex").slice(0, 10),
+  ].join(":")
   const html =
     tooLarge || !page.content.trim()
       ? ""
@@ -128,6 +136,7 @@ export default async function DocPage({ params }: { params: Params }) {
             projectRepoPath: project.repoPath,
             pagePath: page.path,
             pages: pages.map((p) => ({ path: p.path, slug: p.slug })),
+            assets: assetPaths,
           },
         )
 

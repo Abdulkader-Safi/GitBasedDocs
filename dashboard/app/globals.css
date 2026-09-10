@@ -268,3 +268,11 @@
     .doc-prose .code-copy, .doc-prose .heading-anchor { display: none; }
   }
 }
+
+/* An image the index does not have: its name in a box, never a broken icon. */
+@layer components {
+  .doc-prose .asset-missing {
+    @apply inline-flex items-center border border-dashed border-border bg-muted px-3 py-2 font-mono text-xs text-muted-foreground;
+  }
+  .doc-prose img[width] { height: auto; }
+}

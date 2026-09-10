@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db"
 import { docPages, projects, repoConnections, syncLogs } from "@/lib/db/schema"
 import { GitHubError, gh } from "@/lib/github/client"
 import { getConnection } from "@/lib/github/connection"
+import { mimeFor, syncAssets, type WantedAsset } from "@/lib/sync/assets"
 
 export type SyncTrigger = "webhook" | "manual" | "cron"
 
@@ -247,12 +248,23 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
   // narrows it.
   const root = (docsRoot ?? "").replace(/^\/+|\/+$/g, "")
   const wanted = new Map<string, { project: ProjectRow; entry: TreeEntry }>()
+  // Images and PDFs under project folders, served by /api/assets.
+  const wantedAssets = new Map<string, WantedAsset>()
   for (const entry of entries) {
-    if (entry.type !== "blob" || !MD.test(entry.path)) continue
+    if (entry.type !== "blob") continue
     if (root && entry.path !== root && !entry.path.startsWith(`${root}/`)) continue
+    const isPage = MD.test(entry.path)
+    if (!isPage && !mimeFor(entry.path)) continue
     const project = projectFor(activeProjects, entry.path)
     if (!project) continue
-    wanted.set(key(project.id, entry.path), { project, entry })
+    if (isPage) wanted.set(key(project.id, entry.path), { project, entry })
+    else
+      wantedAssets.set(key(project.id, entry.path), {
+        projectId: project.id,
+        path: entry.path,
+        sha: entry.sha,
+        size: entry.size ?? 0,
+      })
   }
 
   const projectIds = activeProjects.map((p) => p.id)
@@ -355,6 +367,20 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       .where(eq(docPages.id, row.id))
     removed++
   }
+
+  // 6. Images and PDFs. Counted with pages in the run totals: the log is
+  // about files that moved, not only Markdown.
+  const assetCounts = await syncAssets({
+    owner,
+    repo,
+    projectIds,
+    wanted: wantedAssets,
+    fail: (path, e) => errors.push(`${path}: ${note(e)}`),
+    warn: (m) => errors.push(m),
+  })
+  added += assetCounts.added
+  changed += assetCounts.changed
+  removed += assetCounts.removed
 
   await markConnection("connected", errors.length ? errors[0] : null, headSha)
   return finish("synced")

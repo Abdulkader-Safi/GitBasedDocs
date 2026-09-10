@@ -1,7 +1,7 @@
 import { and, eq, ne } from "drizzle-orm"
 
 import { getDb } from "@/lib/db"
-import { docPages } from "@/lib/db/schema"
+import { assets, docPages } from "@/lib/db/schema"
 
 // Everything the sidebar needs, without page bodies. Deleted rows are kept
 // for restore hints and never shown; drafts are for admins only.
@@ -34,4 +34,14 @@ export async function getPage(id: string) {
   const db = await getDb()
   const [row] = await db.select().from(docPages).where(eq(docPages.id, id))
   return row ?? null
+}
+
+// Repo paths of every cached image and PDF in the project, for the renderer.
+export async function listProjectAssetPaths(projectId: string): Promise<string[]> {
+  const db = await getDb()
+  const rows = await db
+    .select({ repoPath: assets.repoPath })
+    .from(assets)
+    .where(eq(assets.projectId, projectId))
+  return rows.map((r) => r.repoPath)
 }

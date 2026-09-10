@@ -24,6 +24,9 @@ export interface RenderContext {
   pagePath: string
   // Every live page in the project, for relative links and wikilinks.
   pages: RenderPage[]
+  // Repo paths of every cached image or PDF in the project. An image not in
+  // here renders as an alt box instead of a broken request.
+  assets?: string[]
 }
 
 const MD = /\.mdx?$/
@@ -32,6 +35,32 @@ const MD = /\.mdx?$/
 export function pageHref(projectSlug: string, slug: string, hash = "") {
   const path = slug ? `/${slug.split("/").map(encodeURIComponent).join("/")}` : ""
   return `/p/${encodeURIComponent(projectSlug)}${path}${hash}`
+}
+
+// A stray % in a link would make decodeURI throw and take the whole page
+// render down with it. Fall back to the raw text instead.
+function safeDecode(s: string) {
+  try {
+    return decodeURI(s)
+  } catch {
+    return s
+  }
+}
+
+function assetHref(ctx: RenderContext, repoPath: string) {
+  return `/api/assets/${ctx.projectSlug}/${repoPath.split("/").map(encodeURIComponent).join("/")}`
+}
+
+const IMAGE = /\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)$/i
+
+// What a reader sees instead of a broken image: the name, in a box.
+function missingImage(name: string): Element {
+  return {
+    type: "element",
+    tagName: "span",
+    properties: { className: ["asset-missing"], role: "img", ariaLabel: `Image not found: ${name}` },
+    children: [{ type: "text", value: `Image not found: ${name}` }],
+  }
 }
 
 function isExternal(href: string) {
@@ -60,9 +89,14 @@ function findPage(ctx: RenderContext, target: string): RenderPage | null {
 // that climbs out of it loses its href rather than pointing at another
 // project's page.
 function rehypeLinks(ctx: RenderContext) {
+  const assetSet = new Set(ctx.assets ?? [])
   return (tree: Root) => {
     const dir = posix.dirname(ctx.pagePath)
-    visit(tree, "element", (node: Element) => {
+    const resolve = (href: string) =>
+      posix.normalize(posix.join(dir === "." ? "" : dir, safeDecode(href)))
+    const escapes = (p: string) => p.startsWith("..") || !inProject(ctx.projectRepoPath, p)
+
+    visit(tree, "element", (node: Element, index, parent) => {
       if (node.tagName === "a" && typeof node.properties.href === "string") {
         const href = node.properties.href
         if (href.startsWith("#")) return
@@ -74,14 +108,17 @@ function rehypeLinks(ctx: RenderContext) {
         if (href.startsWith("/")) return
 
         const [pathPart, hash = ""] = href.split("#")
-        const resolved = posix.normalize(posix.join(dir === "." ? "" : dir, decodeURI(pathPart)))
-        if (resolved.startsWith("..") || !inProject(ctx.projectRepoPath, resolved)) {
+        const resolved = resolve(pathPart)
+        if (escapes(resolved)) {
           delete node.properties.href
           return
         }
         const page = findPage(ctx, resolved)
         if (page) {
           node.properties.href = pageHref(ctx.projectSlug, page.slug, hash ? `#${hash}` : "")
+        } else if (assetSet.has(resolved)) {
+          // A link to a PDF or image in the repo goes through the asset route.
+          node.properties.href = assetHref(ctx, resolved)
         }
         return
       }
@@ -89,17 +126,23 @@ function rehypeLinks(ctx: RenderContext) {
       if (node.tagName === "img" && typeof node.properties.src === "string") {
         const src = node.properties.src
         if (isExternal(src) || src.startsWith("/")) return
-        const resolved = posix.normalize(posix.join(dir === "." ? "" : dir, decodeURI(src)))
-        if (resolved.startsWith("..") || !inProject(ctx.projectRepoPath, resolved)) {
+        const resolved = resolve(src)
+        const alt = typeof node.properties.alt === "string" && node.properties.alt
+          ? node.properties.alt
+          : posix.basename(resolved)
+        // Outside the project, or not cached: an alt box, never a request
+        // that would fail or point somewhere it should not.
+        if (escapes(resolved) || !assetSet.has(resolved)) {
+          if (parent && index !== undefined) {
+            parent.children[index] = missingImage(alt)
+            return SKIP
+          }
           delete node.properties.src
           return
         }
         // Served by the asset route behind the same access check. Readers
         // never see a raw.githubusercontent.com URL or the token.
-        node.properties.src = `/api/assets/${ctx.projectSlug}/${resolved
-          .split("/")
-          .map(encodeURIComponent)
-          .join("/")}`
+        node.properties.src = assetHref(ctx, resolved)
         node.properties.loading = "lazy"
       }
     })
@@ -107,10 +150,15 @@ function rehypeLinks(ctx: RenderContext) {
 }
 
 // ---------------------------------------------------------------------------
-// Obsidian wikilinks: [[page]], [[page|label]], [[page#Heading]]. Resolved by
-// file name the way Obsidian does. Runs after sanitize on text nodes, and
-// never inside code.
-const WIKILINK = /(?<!!)\[\[([^\]|#]+)(#[^\]|]+)?(?:\|([^\]]+))?\]\]/g
+// Obsidian wikilinks: [[page]], [[page|label]], [[page#Heading]], plus embeds
+// ![[image.png]] and ![[image.png|300]]. Resolved by file name the way
+// Obsidian does. Runs after sanitize on text nodes, and never inside code.
+const WIKILINK = /(!?)\[\[([^\]|#]+)(#[^\]|]+)?(?:\|([^\]]+))?\]\]/g
+
+interface AssetIndex {
+  byPath: Map<string, string>
+  byName: Map<string, string>
+}
 
 function rehypeWikiLinks(ctx: RenderContext) {
   const byName = new Map<string, RenderPage>()
@@ -118,6 +166,12 @@ function rehypeWikiLinks(ctx: RenderContext) {
     const base = posix.basename(p.path).replace(MD, "").toLowerCase()
     if (!byName.has(base)) byName.set(base, p)
     byName.set(p.path.replace(MD, "").toLowerCase(), p)
+  }
+  const assetIndex: AssetIndex = { byPath: new Map(), byName: new Map() }
+  for (const a of ctx.assets ?? []) {
+    assetIndex.byPath.set(a.toLowerCase(), a)
+    const base = posix.basename(a).toLowerCase()
+    if (!assetIndex.byName.has(base)) assetIndex.byName.set(base, a)
   }
 
   return (tree: Root) => {
@@ -133,25 +187,65 @@ function rehypeWikiLinks(ctx: RenderContext) {
         else merged.push(child)
       }
       node.children = merged.flatMap((child) =>
-        child.type === "text" ? splitWikiLinks(child, ctx, byName) : [child],
+        child.type === "text" ? splitWikiLinks(child, ctx, byName, assetIndex) : [child],
       )
     })
   }
+}
+
+// Obsidian paths are vault relative; the vault is the project folder. Try the
+// exact path first, then the bare file name anywhere in the project.
+function findAsset(ctx: RenderContext, index: AssetIndex, target: string): string | null {
+  const t = target.toLowerCase()
+  const inProjectPath = ctx.projectRepoPath ? `${ctx.projectRepoPath}/${target}`.toLowerCase() : t
+  return (
+    index.byPath.get(t) ??
+    index.byPath.get(inProjectPath) ??
+    index.byName.get(posix.basename(t)) ??
+    null
+  )
 }
 
 function splitWikiLinks(
   text: Text,
   ctx: RenderContext,
   byName: Map<string, RenderPage>,
+  assetIndex: AssetIndex,
 ): ElementContent[] {
   const out: ElementContent[] = []
   let last = 0
   for (const m of text.value.matchAll(WIKILINK)) {
     const start = m.index ?? 0
     if (start > last) out.push({ type: "text", value: text.value.slice(last, start) })
-    const target = m[1].trim()
-    const heading = m[2]?.slice(1).trim()
-    const label = (m[3] ?? `${target}${heading ? ` > ${heading}` : ""}`).trim()
+    const embed = m[1] === "!"
+    const target = m[2].trim()
+    const heading = m[3]?.slice(1).trim()
+    const alias = m[4]?.trim()
+    last = start + m[0].length
+
+    // ![[diagram.png]] and ![[diagram.png|300]] or |300x200 for a size.
+    if (embed && IMAGE.test(target)) {
+      const found = findAsset(ctx, assetIndex, target)
+      if (!found) {
+        out.push(missingImage(posix.basename(target)))
+        continue
+      }
+      const size = alias?.match(/^(\d+)(?:x(\d+))?$/)
+      const properties: Element["properties"] = {
+        src: assetHref(ctx, found),
+        alt: size || !alias ? posix.basename(target) : alias,
+        loading: "lazy",
+      }
+      if (size) {
+        properties.width = Number(size[1])
+        if (size[2]) properties.height = Number(size[2])
+      }
+      out.push({ type: "element", tagName: "img", properties, children: [] })
+      continue
+    }
+
+    // A note embed (![[Other note]]) links to the note; we do not transclude.
+    const label = (alias ?? `${target}${heading ? ` > ${heading}` : ""}`).trim()
     const page = byName.get(target.toLowerCase())
     if (page) {
       const hash = heading ? `#${new GithubSlugger().slug(heading)}` : ""
@@ -170,7 +264,6 @@ function splitWikiLinks(
         children: [{ type: "text", value: label }],
       })
     }
-    last = start + m[0].length
   }
   if (!out.length) return [text]
   if (last < text.value.length) out.push({ type: "text", value: text.value.slice(last) })
