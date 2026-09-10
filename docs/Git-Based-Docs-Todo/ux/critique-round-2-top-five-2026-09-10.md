@@ -14,7 +14,7 @@ order: 29
 
 From the second review (`.impeccable/critique/`, 27/40). Safi chose the top five first. One commit each.
 
-- [ ] Wide Mermaid diagrams keep a readable size: natural width with sideways scroll, and tap to open larger.
+- [x] Wide Mermaid diagrams keep a readable size: natural width with sideways scroll, and tap to open larger.
 - [ ] Phone pages menu is a real modal: Escape closes it, focus moves in and comes back, the page behind cannot be reached.
 - [ ] Every page has a browser tab title.
 - [ ] The Markdown renderer stays on the server: `pageHref` moves out of `lib/render/markdown.ts`, which becomes server-only.

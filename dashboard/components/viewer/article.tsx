@@ -2,11 +2,61 @@
 
 import { useEffect, useRef } from "react"
 
+// Mermaid sizes a diagram to 100% of the column with a max-width, so a wide
+// one shrinks until its labels are unreadable. Let it fit the column down to
+// 75% of its natural size and no further; past that the box scrolls
+// sideways. Pure CSS, so it follows the reader's page width choice.
+function naturalSize(svg: SVGSVGElement | null) {
+  if (!svg) return
+  const natural = parseFloat(svg.style.maxWidth) || svg.viewBox.baseVal?.width || 0
+  if (!natural) return
+  svg.removeAttribute("width")
+  svg.dataset.natural = String(natural)
+  svg.style.width = `max(${Math.round(natural * 0.75)}px, min(100%, ${natural}px))`
+  svg.style.maxWidth = "none"
+}
+
+// One shared dialog on <body> shows a diagram as large as the screen allows. Native <dialog> gives Escape, a backdrop
+// and a focus trap; focus returns to the Expand button on close.
+function openLarger(trigger: HTMLButtonElement) {
+  const svg = trigger.closest(".mermaid-diagram")?.querySelector<SVGSVGElement>(".mermaid-scroll svg")
+  if (!svg) return
+  let dialog = document.querySelector<HTMLDialogElement>("dialog.mermaid-dialog")
+  if (!dialog) {
+    dialog = document.createElement("dialog")
+    dialog.className = "mermaid-dialog"
+    dialog.setAttribute("aria-label", "Diagram")
+    dialog.addEventListener("click", (e) => e.target === dialog && dialog?.close())
+    document.body.append(dialog)
+  }
+  const bar = document.createElement("div")
+  bar.className = "mermaid-dialog-bar"
+  const close = document.createElement("button")
+  close.type = "button"
+  close.className = "cursor-pointer px-2 py-1 hover:text-foreground"
+  close.textContent = "Close"
+  close.addEventListener("click", () => dialog?.close())
+  bar.append("Diagram", close)
+  const body = document.createElement("div")
+  body.className = "mermaid-dialog-body"
+  const copy = svg.cloneNode(true) as SVGSVGElement
+  body.append(copy)
+  dialog.replaceChildren(bar, body)
+  dialog.addEventListener("close", () => trigger.focus(), { once: true })
+  dialog.showModal()
+  const natural = Number(copy.dataset.natural) || copy.viewBox.baseVal.width
+  // Fill the dialog: shrink a wide diagram to fit (never below 60%), grow a
+  // small one up to twice its size.
+  const room = body.clientWidth - 48
+  const size = natural > room ? Math.max(room, natural * 0.6) : Math.min(room, natural * 2)
+  copy.style.width = `${Math.round(size)}px`
+}
+
 // `html` must come from renderMarkdown/renderCached, never from anywhere
 // else: that pipeline runs raw HTML through rehype-sanitize's allowlist
 // before any of our own transforms (see lib/render/markdown.check.ts for
-// the injection cases). Copy buttons in it are plain markup; one delegated listener wires
-// them up.
+// the injection cases). Copy buttons in it are plain markup; one delegated
+// listener wires them up.
 export function Article({ html, highlight = "" }: { html: string; highlight?: string }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -52,6 +102,8 @@ export function Article({ html, highlight = "" }: { html: string; highlight?: st
     const timers = new Set<ReturnType<typeof setTimeout>>()
 
     async function onClick(e: MouseEvent) {
+      const expand = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-expand]")
+      if (expand && root?.contains(expand)) return openLarger(expand)
       const button = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-copy]")
       if (!button || !root?.contains(button)) return
       const code = button.closest(".code-block")?.querySelector("pre")?.textContent ?? ""
@@ -109,9 +161,19 @@ export function Article({ html, highlight = "" }: { html: string; highlight?: st
           await mermaid.parse(source)
           const { svg } = await mermaid.render(`mermaid-${i}-${Date.now()}`, source)
           if (mine !== latest) return
+          const scroll = document.createElement("div")
+          scroll.className = "mermaid-scroll"
           // Strict mode: mermaid runs the SVG through DOMPurify before
           // returning it, and the source was plain text in our own markup.
-          box.innerHTML = svg
+          scroll.innerHTML = svg
+          naturalSize(scroll.querySelector("svg"))
+          const expand = document.createElement("button")
+          expand.type = "button"
+          expand.className = "mermaid-expand"
+          expand.textContent = "Expand"
+          expand.setAttribute("aria-label", "Open diagram larger")
+          expand.dataset.expand = ""
+          box.replaceChildren(expand, scroll)
           box.dataset.state = "drawn"
         } catch (e) {
           // Show the source and why it failed, never an empty box.

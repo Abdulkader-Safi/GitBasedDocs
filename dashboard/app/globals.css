@@ -293,14 +293,19 @@
   /* A wide formula scrolls inside itself instead of widening the page. */
   .doc-prose .katex-display { overflow-x: auto; overflow-y: hidden; padding-block: 0.25rem; }
 
-  /* Mermaid: the source shows dimmed until the browser draws it. */
-  .doc-prose .mermaid-diagram {
-    @apply overflow-x-auto border border-border bg-card p-4 text-center;
-  }
+  /* Mermaid: the source shows dimmed until the browser draws it. A drawn
+     diagram keeps its natural size and scrolls sideways when wider than the
+     column, instead of shrinking until the labels cannot be read. */
+  .doc-prose .mermaid-diagram { @apply relative border border-border bg-card; }
   .doc-prose .mermaid-diagram:not([data-state]) {
-    @apply font-mono text-xs whitespace-pre text-start text-muted-foreground;
+    @apply overflow-x-auto p-4 font-mono text-xs whitespace-pre text-muted-foreground;
   }
-  .doc-prose .mermaid-diagram svg { @apply mx-auto h-auto max-w-full; }
+  .doc-prose .mermaid-scroll { @apply overflow-x-auto p-4 pt-9; }
+  .doc-prose .mermaid-scroll svg { @apply mx-auto block h-auto; }
+  .doc-prose .mermaid-expand {
+    @apply absolute end-2 top-2 z-10 cursor-pointer px-2 py-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase transition-colors hover:text-foreground pointer-coarse:py-2.5;
+  }
+  .doc-prose .mermaid-diagram[data-state="error"] { @apply p-4; }
   .doc-prose .mermaid-diagram[data-state="error"] { @apply text-start; }
   .doc-prose .mermaid-diagram pre { @apply mt-2 bg-muted p-3 text-xs text-muted-foreground; }
   .doc-prose .mermaid-error { @apply font-mono text-xs text-destructive; }
@@ -314,6 +319,16 @@
 /* Reader page width and outline panel, from data attributes set on <html>
    before first paint (lib/viewer/prefs.ts). Narrow keeps a comfortable line
    length; wide makes room for tables and diagrams; full uses the window. */
+/* A diagram opened larger. Outside .doc-prose because the dialog lives on
+   <body>. */
+.mermaid-dialog {
+  @apply fixed inset-0 m-auto h-[90svh] w-[95vw] max-w-none border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/60;
+}
+.mermaid-dialog[open] { @apply flex flex-col; }
+.mermaid-dialog .mermaid-dialog-bar { @apply flex items-center justify-between border-b border-border px-4 py-2 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase; }
+.mermaid-dialog .mermaid-dialog-body { @apply flex-1 overflow-auto p-6; }
+.mermaid-dialog svg { @apply mx-auto block h-auto; }
+
 /* Unlayered on purpose: it has to beat the xl:flex utility on the panel,
    and Tailwind's utilities layer outranks anything in a layer before it. */
 .doc-body { max-width: 42rem; }
