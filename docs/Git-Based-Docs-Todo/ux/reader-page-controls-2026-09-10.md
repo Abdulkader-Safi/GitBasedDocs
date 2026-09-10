@@ -26,7 +26,7 @@ Done when:
 
 What shipped:
 
-- `components/viewer/page-controls.tsx`: `PageWidthMenu` (icon shows the current width; menu of Narrow 42rem, Wide 64rem, Full) and `OutlineToggle`, both on one small store over `<html>` data attributes plus localStorage.
+- `components/viewer/page-controls.tsx`: `PageWidthToggle`, one button that cycles Narrow 42rem, Wide 64rem, Full (Safi asked for a button, not a dropdown; the icon shows the current width) and `OutlineToggle`, both on one small store over `<html>` data attributes plus localStorage.
 - `lib/viewer/prefs.ts` + a script in `<head>` (app/layout.tsx) apply both before first paint; checked on reload that the first frame already has the stored values.
 - Right panel on doc pages from `xl` up, bordered like the left sidebar, with a hide button in its header and a show/hide toggle in the top bar.
 - `scroll-behavior: smooth` under `prefers-reduced-motion: no-preference`, with `data-scroll-behavior="smooth"` so Next does not animate route changes. A clicked outline title stays marked during the scroll, and the last heading is marked at the bottom of the page.

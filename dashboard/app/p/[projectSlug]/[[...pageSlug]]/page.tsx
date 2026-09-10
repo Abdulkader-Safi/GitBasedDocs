@@ -32,7 +32,7 @@ import { ProjectSwitcher } from "@/components/viewer/project-switcher"
 import { Article } from "@/components/viewer/article"
 import { SearchPalette } from "@/components/viewer/search-palette"
 import { Outline } from "@/components/viewer/outline"
-import { OutlineToggle, PageWidthMenu } from "@/components/viewer/page-controls"
+import { OutlineToggle, PageWidthToggle } from "@/components/viewer/page-controls"
 import { Chip } from "@/components/ui/status-badge"
 import {
   IconArrowLeft,
@@ -151,7 +151,7 @@ export default async function DocPage({
         lead={<MobileNav>{sidebar}</MobileNav>}
         start={<ProjectSwitcher current={project} projects={visible} />}
       >
-        <PageWidthMenu />
+        <PageWidthToggle />
         {toc.length > 1 && <OutlineToggle className="hidden xl:flex" />}
         <SearchPalette projectSlug={project.slug} projectName={project.name} />
       </TopBar>

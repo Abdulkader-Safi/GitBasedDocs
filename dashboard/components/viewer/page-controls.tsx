@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useSyncExternalStore } from "react"
 import { cn } from "cn"
 
 import { PREF_KEYS } from "@/lib/viewer/prefs"
-import { IconCheck, IconPanel, IconWidthFull, IconWidthNarrow, IconWidthWide } from "@/components/icons"
+import { IconPanel, IconWidthFull, IconWidthNarrow, IconWidthWide } from "@/components/icons"
 
 type PrefName = keyof typeof PREF_KEYS
 
@@ -35,89 +35,33 @@ function usePref<T extends string>(name: PrefName, fallback: T): [T, (value: T) 
 
 type PageWidth = "narrow" | "wide" | "full"
 
-const WIDTHS: { value: PageWidth; label: string; hint: string; icon: typeof IconWidthNarrow }[] = [
-  { value: "narrow", label: "Narrow", hint: "Easiest to read", icon: IconWidthNarrow },
-  { value: "wide", label: "Wide", hint: "Room for tables and diagrams", icon: IconWidthWide },
-  { value: "full", label: "Full width", hint: "Use the whole window", icon: IconWidthFull },
+const WIDTHS: { value: PageWidth; label: string; icon: typeof IconWidthNarrow }[] = [
+  { value: "narrow", label: "Narrow", icon: IconWidthNarrow },
+  { value: "wide", label: "Wide", icon: IconWidthWide },
+  { value: "full", label: "Full width", icon: IconWidthFull },
 ]
 
 const iconButton =
   "flex size-8 shrink-0 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground pointer-coarse:size-10"
 
-export function PageWidthMenu() {
+// One button that steps through Narrow, Wide and Full width. The icon shows
+// the current width; the label says what the next click does.
+export function PageWidthToggle() {
   const [width, setWidth] = usePref<PageWidth>("pageWidth", "narrow")
-  const [open, setOpen] = useState(false)
-  const root = useRef<HTMLDivElement>(null)
-  const button = useRef<HTMLButtonElement>(null)
-  const current = WIDTHS.find((w) => w.value === width) ?? WIDTHS[0]
-
-  // Close on a click elsewhere or Escape, and give focus back to the button.
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => {
-      if (!root.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return
-      setOpen(false)
-      button.current?.focus()
-    }
-    document.addEventListener("mousedown", onDown)
-    document.addEventListener("keydown", onKey)
-    root.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus()
-    return () => {
-      document.removeEventListener("mousedown", onDown)
-      document.removeEventListener("keydown", onKey)
-    }
-  }, [open])
-
+  const at = Math.max(0, WIDTHS.findIndex((w) => w.value === width))
+  const current = WIDTHS[at]
+  const next = WIDTHS[(at + 1) % WIDTHS.length]
+  const label = `Page width: ${current.label}. Switch to ${next.label}.`
   return (
-    <div ref={root} className="relative hidden lg:block">
-      <button
-        ref={button}
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Page width: ${current.label}`}
-        title="Page width"
-        onClick={() => setOpen((o) => !o)}
-        className={iconButton}
-      >
-        <current.icon size={16} />
-      </button>
-      {open && (
-        <div
-          role="menu"
-          aria-label="Page width"
-          className="absolute end-0 top-full z-40 mt-1 flex w-60 flex-col border border-border bg-popover py-1 shadow-lg"
-        >
-          {WIDTHS.map((w) => (
-            <button
-              key={w.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={w.value === width}
-              onClick={() => {
-                setWidth(w.value)
-                setOpen(false)
-                button.current?.focus()
-              }}
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-2 text-start hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
-                w.value === width ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              <w.icon size={16} className="shrink-0" />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="font-mono text-[13px] font-medium">{w.label}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{w.hint}</span>
-              </span>
-              {w.value === width && <IconCheck size={14} className="shrink-0 text-primary" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={() => setWidth(next.value)}
+      className={cn(iconButton, "hidden lg:flex")}
+    >
+      <current.icon size={16} />
+    </button>
   )
 }
 
