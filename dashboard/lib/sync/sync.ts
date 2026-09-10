@@ -17,6 +17,8 @@ export interface SyncResult {
   removed: number
   errors: string[]
   durationMs: number
+  // GitHub answered 403 or 429. The scheduler backs off on this.
+  rateLimited: boolean
 }
 
 interface TreeEntry {
@@ -123,6 +125,10 @@ function message(e: unknown): string {
 // Swap for a DB advisory lock the day this runs on more than one node.
 let inFlight: Promise<SyncResult> | null = null
 
+export function isSyncing(): boolean {
+  return inFlight !== null
+}
+
 export function runSync(trigger: SyncTrigger = "manual"): Promise<SyncResult> {
   if (inFlight) return inFlight
   inFlight = doSync(trigger).finally(() => {
@@ -138,6 +144,11 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
   let changed = 0
   let removed = 0
   let headSha: string | null = null
+  let rateLimited = false
+  const note = (e: unknown) => {
+    if (e instanceof GitHubError && (e.status === 403 || e.status === 429)) rateLimited = true
+    return message(e)
+  }
 
   const db = await getDb()
 
@@ -154,7 +165,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       durationMs,
       createdAt: new Date(),
     })
-    return { status, headSha, added, changed, removed, errors, durationMs }
+    return { status, headSha, added, changed, removed, errors, durationMs, rateLimited }
   }
 
   const connection = await getConnection()
@@ -181,6 +192,8 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       .where(eq(repoConnections.id, connection.id))
   }
 
+  await markConnection("syncing", connection.lastError)
+
   // 1. One cheap call: has the branch moved at all?
   try {
     const ref = (await gh(
@@ -188,7 +201,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
     )) as { object: { sha: string } }
     headSha = ref.object.sha
   } catch (e) {
-    errors.push(message(e))
+    errors.push(note(e))
     await markConnection("error", message(e))
     return finish("error")
   }
@@ -209,7 +222,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       errors.push("Repo tree came back truncated. Some pages may be missing.")
     }
   } catch (e) {
-    errors.push(message(e))
+    errors.push(note(e))
     await markConnection("error", message(e))
     return finish("error")
   }
@@ -290,7 +303,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
           : blob.content
     } catch (e) {
       // Keep the last good copy, flag it, try again next run.
-      errors.push(`${entry.path}: ${message(e)}`)
+      errors.push(`${entry.path}: ${note(e)}`)
       if (prior) await markStale(prior.id)
       continue
     }
