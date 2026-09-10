@@ -68,7 +68,9 @@ const loadDoc = cache(async (projectSlug: string, slugParts: string[]) => {
     return { session, missing: true, attempted: project?.id ?? null } as const
 
   const isAdmin = session.user.role === "admin"
-  const pages = await listProjectPages(project.id, isAdmin)
+  // Editors preview drafts too; that is what the role is for.
+  const seesDrafts = isAdmin || session.user.role === "editor"
+  const pages = await listProjectPages(project.id, seesDrafts)
   const tree = buildTree(pages)
   const wanted = slugParts.map(decodeSegment).join("/")
   const slug = slugParts.length ? wanted : landingSlug(tree)
@@ -78,6 +80,7 @@ const loadDoc = cache(async (projectSlug: string, slugParts: string[]) => {
     session,
     project,
     isAdmin,
+    seesDrafts,
     pages,
     tree,
     slug: slug ?? "",
@@ -127,7 +130,7 @@ export default async function DocPage({
     notFound()
   }
 
-  const { session, project, isAdmin, pages, tree, slug, summary } = doc
+  const { session, project, isAdmin, seesDrafts, pages, tree, slug, summary } = doc
   const visible = await listVisibleProjects(session.user.id, session.user.role)
 
   const sidebar = (
@@ -214,7 +217,7 @@ export default async function DocPage({
     tooLarge || !page.content.trim()
       ? ""
       : await renderCached(
-          `${page.id}:${page.blobSha}:${generation}:${isAdmin ? "a" : "v"}`,
+          `${page.id}:${page.blobSha}:${generation}:${seesDrafts ? "d" : "v"}`,
           page.content,
           {
             projectSlug: project.slug,

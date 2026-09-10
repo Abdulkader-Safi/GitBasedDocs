@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db"
 import { assets, docPages } from "@/lib/db/schema"
 
 // Everything the sidebar needs, without page bodies. Deleted rows are kept
-// for restore hints and never shown; drafts are for admins only.
+// for restore hints and never shown; drafts are for admins and editors.
 export async function listProjectPages(projectId: string, includeDrafts: boolean) {
   const db = await getDb()
   return db

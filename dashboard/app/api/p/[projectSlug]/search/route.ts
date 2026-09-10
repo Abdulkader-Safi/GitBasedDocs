@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     return new NextResponse("Not found", { status: 404 })
   }
 
-  const includeDrafts = session.user.role === "admin"
+  const includeDrafts = session.user.role === "admin" || session.user.role === "editor"
   const q = (new URL(request.url).searchParams.get("q") ?? "").slice(0, 200)
   const hits = q.trim()
     ? await searchPages(project.id, q, { includeDrafts })
