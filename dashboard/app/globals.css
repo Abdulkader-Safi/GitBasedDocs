@@ -257,16 +257,14 @@
   .doc-prose .callout-warning { @apply border-status-warning; }
   .doc-prose .callout-warning .callout-label { @apply text-status-warning; }
 
-  /* highlight.js tokens, tuned for the dark code surface. */
-  .doc-prose .hljs-comment, .doc-prose .hljs-quote { color: oklch(0.6 0.012 40); font-style: italic; }
-  .doc-prose .hljs-keyword, .doc-prose .hljs-selector-tag, .doc-prose .hljs-built_in { color: oklch(0.78 0.12 50); }
-  .doc-prose .hljs-string, .doc-prose .hljs-attr, .doc-prose .hljs-template-variable { color: oklch(0.8 0.1 145); }
-  .doc-prose .hljs-number, .doc-prose .hljs-literal, .doc-prose .hljs-symbol { color: oklch(0.8 0.11 75); }
-  .doc-prose .hljs-title, .doc-prose .hljs-section, .doc-prose .hljs-name { color: oklch(0.82 0.08 230); }
-  .doc-prose .hljs-variable, .doc-prose .hljs-params { color: var(--code-foreground); }
-  .doc-prose .hljs-meta, .doc-prose .hljs-type { color: oklch(0.75 0.09 300); }
-  .doc-prose .hljs-deletion { color: oklch(0.72 0.15 25); }
-  .doc-prose .hljs-addition { color: oklch(0.8 0.1 145); }
+  /* Shiki colours arrive as inline spans. Lines stretch to the full scroll
+     width so highlighted and diff lines colour edge to edge. */
+  .doc-prose pre code { display: inline-block; min-width: 100%; }
+  .doc-prose pre .line { display: inline-block; width: 100%; }
+  .doc-prose .code-lang { text-transform: none; letter-spacing: 0; }
+  .doc-prose pre .line.highlighted { background: oklch(1 0 0 / 7%); box-shadow: inset 2px 0 var(--primary); }
+  .doc-prose pre .line.diff.add { background: oklch(0.8 0.16 151 / 12%); box-shadow: inset 2px 0 oklch(0.8 0.16 151); }
+  .doc-prose pre .line.diff.remove { background: oklch(0.7 0.19 22 / 14%); box-shadow: inset 2px 0 oklch(0.7 0.19 22); opacity: 0.75; }
 
   @media print {
     .doc-prose pre { white-space: pre-wrap; word-break: break-word; }

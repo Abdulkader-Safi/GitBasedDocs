@@ -2,13 +2,19 @@ import { posix } from "node:path"
 import GithubSlugger from "github-slugger"
 import type { Element, ElementContent, Root, Text } from "hast"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
-import rehypeHighlight from "rehype-highlight"
 import rehypeSanitize from "rehype-sanitize"
 import rehypeSlug from "rehype-slug"
 import rehypeStringify from "rehype-stringify"
 import remarkGfm from "remark-gfm"
 import remarkParse from "remark-parse"
 import remarkRehype from "remark-rehype"
+import rehypeShiki from "@shikijs/rehype"
+import {
+  transformerMetaHighlight,
+  transformerNotationDiff,
+  transformerNotationHighlight,
+} from "@shikijs/transformers"
+import type { ShikiTransformer } from "shiki"
 import { unified } from "unified"
 import { SKIP, visit } from "unist-util-visit"
 
@@ -325,8 +331,44 @@ function rehypeCallouts() {
 }
 
 // ---------------------------------------------------------------------------
-// Fenced code: dark block with the language label and a copy button. The
-// button is inert HTML; a small client component wires up the click.
+// Shiki: VS Code grammars on the server, so readers get coloured spans and no
+// highlighter script. Grammars load the first time a page uses a language;
+// an unknown fence language falls back to plain text instead of failing.
+const CODE_THEME = "github-dark-default"
+
+// `title="lib/auth.ts"` in the fence meta becomes the code head label. The
+// theme's inline colours come off the <pre> so it sits on --code-surface.
+const codeFrame: ShikiTransformer = {
+  name: "gbd:frame",
+  pre(node) {
+    const title = (this.options.meta as { title?: string } | undefined)?.title
+    if (title) node.properties.dataTitle = title
+    delete node.properties.style
+  },
+}
+
+const shikiOptions = {
+  theme: CODE_THEME,
+  langs: [],
+  lazy: true,
+  defaultLanguage: "text",
+  fallbackLanguage: "text",
+  addLanguageClass: true,
+  parseMetaString: (meta: string) => {
+    const title = meta.match(/title="([^"]*)"/)?.[1]
+    return title ? { title } : {}
+  },
+  transformers: [
+    transformerNotationDiff(),
+    transformerNotationHighlight(),
+    transformerMetaHighlight(),
+    codeFrame,
+  ],
+}
+
+// ---------------------------------------------------------------------------
+// Fenced code: dark block with the language (or title) label and a copy
+// button. The button is inert HTML; a small client component wires it up.
 function rehypeCodeBlocks() {
   return (tree: Root) => {
     visit(tree, "element", (node: Element, index, parent) => {
@@ -334,9 +376,14 @@ function rehypeCodeBlocks() {
       const code = node.children.find(
         (c): c is Element => c.type === "element" && c.tagName === "code",
       )
-      const classes = (code?.properties.className as string[] | undefined) ?? []
+      // remark-rehype gives className as an array; Shiki writes `class` as a string.
+      const raw = code?.properties.className ?? code?.properties.class
+      const classes = Array.isArray(raw) ? raw.map(String) : typeof raw === "string" ? raw.split(" ") : []
+      const title = typeof node.properties.dataTitle === "string" ? node.properties.dataTitle : ""
+      delete node.properties.dataTitle
       const lang =
-        classes.find((c) => c.startsWith("language-"))?.slice("language-".length) ?? "text"
+        title ||
+        (classes.find((c) => c.startsWith("language-"))?.slice("language-".length) ?? "text")
 
       parent.children[index] = {
         type: "element",
@@ -386,7 +433,7 @@ export async function renderMarkdown(markdown: string, ctx: RenderContext): Prom
       properties: { className: ["heading-anchor"], ariaLabel: "Link to this section" },
       content: { type: "text", value: "#" },
     })
-    .use(rehypeHighlight, { detect: false })
+    .use(rehypeShiki, shikiOptions)
     .use(rehypeWikiLinks, ctx)
     .use(rehypeCallouts)
     .use(rehypeCodeBlocks)
@@ -412,11 +459,16 @@ export function clearRenderCache(): number {
   return n
 }
 
+// Bump when the pipeline's output changes, so cached HTML from the old
+// pipeline is never served.
+const RENDER_VERSION = 2
+
 export async function renderCached(
-  cacheKey: string,
+  pageKey: string,
   markdown: string,
   ctx: RenderContext,
 ): Promise<string> {
+  const cacheKey = `v${RENDER_VERSION}:${pageKey}`
   const hit = cache.get(cacheKey)
   if (hit !== undefined) return hit
   const html = await renderMarkdown(markdown, ctx)

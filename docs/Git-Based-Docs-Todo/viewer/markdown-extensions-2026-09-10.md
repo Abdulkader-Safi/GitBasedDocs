@@ -16,7 +16,7 @@ Safi asked for Mermaid and the other formatters writers expect, plus the best co
 
 Steps, one commit each:
 
-- [ ] Shiki code highlighting (replaces highlight.js): titles, `{1,3}` line ranges, `[!code ++]` diff marks, fallback for unknown languages.
+- [x] Shiki code highlighting (replaces highlight.js): titles, `{1,3}` line ranges, `[!code ++]` diff marks, fallback for unknown languages.
 - [ ] Mermaid diagrams, loaded in the browser only on pages that have one, strict security, redrawn on theme change.
 - [ ] KaTeX math, inline and block, rendered on the server.
 - [ ] Obsidian callouts: all types, custom titles, folding.

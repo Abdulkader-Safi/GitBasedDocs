@@ -108,8 +108,24 @@ const code = await r("```bash\ncurl https://x.dev\n```")
 assert.match(code, /<div class="code-block">/)
 assert.match(code, /<span class="code-lang">bash<\/span>/)
 assert.match(code, /<button type="button" class="code-copy" data-copy="">Copy<\/button>/)
-assert.match(code, /class="hljs language-bash"/)
+assert.match(code, /<code class="language-bash">/)
+assert.match(code, /<span style="color:#[0-9A-F]{6}">curl<\/span>/, "Shiki colours tokens")
+assert.doesNotMatch(code, /<pre[^>]*style=/, "theme background stripped, block sits on --code-surface")
 assert.match(await r("```\nplain\n```"), /<span class="code-lang">text<\/span>/)
+// an unknown fence language falls back to plain text instead of throwing
+assert.match(await r("```notalanguage\nx\n```"), /class="code-block"/)
+// fence meta: title becomes the label, {2} marks line 2
+const meta = await r('```ts title="lib/auth.ts" {2}\nconst a = 1\nconst b = 2\n```')
+assert.match(meta, /<span class="code-lang">lib\/auth\.ts<\/span>/)
+assert.equal(meta.match(/class="line highlighted"/g)?.length, 1)
+assert.doesNotMatch(meta, /data-title/)
+// [!code ++] and [!code --] notation becomes diff lines, comment removed
+const diff = await r("```js\nold() // [!code --]\nnew() // [!code ++]\n```")
+assert.match(diff, /class="line diff remove"/)
+assert.match(diff, /class="line diff add"/)
+assert.doesNotMatch(diff, /\[!code/)
+// code is text: markup inside a fence is escaped, never parsed
+assert.doesNotMatch(await r("```html\n<script>alert(1)</script>\n```"), /<script>/)
 
 // --- headings get ids and an anchor ---------------------------------------
 const h = await r("## Getting a token")
