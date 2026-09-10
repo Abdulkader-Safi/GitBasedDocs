@@ -24,14 +24,16 @@ export function TopBar({
   children?: React.ReactNode
 }) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-4 border-b border-border bg-background px-4 sm:px-6 print:hidden">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-3 sm:gap-4 sm:px-6 print:hidden">
       {lead}
       <Link
         href="/"
-        className="flex items-center gap-2 font-mono text-sm font-medium text-foreground"
+        aria-label="GitBasedDocs home"
+        className="flex shrink-0 items-center gap-2 font-mono text-sm font-medium text-foreground"
       >
         <IconBook size={18} />
-        GitBasedDocs
+        {/* Icon only on phones, where the bar also carries the switcher and search. */}
+        <span className="hidden sm:inline">GitBasedDocs</span>
       </Link>
 
       {start && (
@@ -44,22 +46,23 @@ export function TopBar({
       {variant === "admin" && (
         <Link
           href="/admin"
-          className="flex items-center gap-1.5 bg-muted px-2 py-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
+          className="flex shrink-0 items-center gap-1.5 bg-muted px-2 py-1 font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase hover:text-foreground"
         >
           <IconSettings size={11} />
           Admin
         </Link>
       )}
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-3">
         {children}
         {variant === "reader" && isAdmin && (
           <Link
             href="/admin"
-            className="flex items-center gap-1.5 px-2 py-1 font-mono text-[13px] text-muted-foreground hover:text-foreground"
+            aria-label="Admin"
+            className="flex h-8 shrink-0 items-center gap-1.5 px-2 font-mono text-[13px] text-muted-foreground hover:text-foreground"
           >
             <IconSettings size={14} />
-            Admin
+            <span className="hidden sm:inline">Admin</span>
           </Link>
         )}
         <ThemeToggle />

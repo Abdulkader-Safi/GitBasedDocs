@@ -270,6 +270,43 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
   const revoke = (u: User) =>
     act(`Signed ${u.email} out everywhere`, () => fetch(`/api/admin/users/${u.id}/revoke`, { method: "POST" }))
 
+  const menu = (u: User) => {
+    const self = u.id === currentUserId
+    return (
+      <details className="group relative inline-block shrink-0">
+        <summary
+          aria-label={`Actions for ${u.email}`}
+          className="flex size-8 cursor-pointer list-none items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground [&::-webkit-details-marker]:hidden"
+        >
+          <IconMore size={16} />
+        </summary>
+        <div className="absolute end-0 top-full z-30 mt-1 flex min-w-52 flex-col border border-border bg-popover py-1 text-start shadow-lg">
+          <MenuItem icon={<IconEdit size={14} />} onClick={() => setMode({ kind: "edit", user: u })}>
+            Edit role and projects
+          </MenuItem>
+          <MenuItem icon={<IconLock size={14} />} onClick={() => setMode({ kind: "reset", user: u })}>
+            Reset password
+          </MenuItem>
+          {!self && (
+            <MenuItem icon={<IconLogout size={14} />} onClick={() => revoke(u)}>
+              Sign out everywhere
+            </MenuItem>
+          )}
+          {!self &&
+            (u.isActive ? (
+              <MenuItem icon={<IconArchive size={14} />} danger onClick={() => setActive(u, false)}>
+                Deactivate
+              </MenuItem>
+            ) : (
+              <MenuItem icon={<IconRefresh size={14} />} onClick={() => setActive(u, true)}>
+                Reactivate
+              </MenuItem>
+            ))}
+        </div>
+      </details>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -291,8 +328,10 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
       )}
       {error && <ErrorText>{error}</ErrorText>}
 
-      <div className="overflow-x-auto border border-border bg-card">
-        <table className="w-full min-w-[820px] border-collapse">
+      {/* Table from lg up, where it fits without a scroll box (a scroll box
+          would also clip the actions menu). Stacked rows below that. */}
+      <div className="hidden border border-border bg-card lg:block">
+        <table className="w-full border-collapse">
           <thead>
             <tr className="bg-muted">
               {["Name", "Email", "Role", "Status", "Projects", "Last login", ""].map((h) => (
@@ -306,79 +345,49 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
             {!loaded ? (
               <tr><td colSpan={7} className="px-3.5 py-5 font-mono text-xs text-muted-foreground">Loading...</td></tr>
             ) : (
-              users.map((u) => {
-                const self = u.id === currentUserId
-                return (
-                  <tr key={u.id} className={cn("border-t border-border", !u.isActive && "opacity-50")}>
-                    <td className="px-3.5 py-3 font-mono text-[13px] font-medium">
-                      <span className="flex items-center gap-2">
-                        <IconUser size={14} className="text-muted-foreground" />
-                        {u.name ?? "Unnamed"}
-                        {self && <span className="text-muted-foreground">(you)</span>}
-                      </span>
-                    </td>
-                    <td className="px-3.5 py-3 font-mono text-[13px] text-muted-foreground">{u.email}</td>
-                    <td className="px-3.5 py-3">
-                      <Pill tone={u.role === "admin" ? "strong" : "muted"}>
-                        {u.role === "admin" && <IconSettings size={11} />}
-                        {u.role}
-                      </Pill>
-                    </td>
-                    <td className="px-3.5 py-3">
-                      <Pill tone={u.isActive ? "ok" : "muted"}>
-                        {u.isActive ? <IconCheck size={11} /> : <IconArchive size={11} />}
-                        {u.isActive ? "Active" : "Deactivated"}
-                      </Pill>
-                    </td>
-                    <td className="px-3.5 py-3 font-mono text-[13px] text-muted-foreground">
-                      {u.role === "admin" ? "all" : u.projectIds.length}
-                    </td>
-                    <td className="px-3.5 py-3 font-mono text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <IconClock size={12} />
-                        {relativeTime(u.lastLoginAt ? new Date(u.lastLoginAt) : null)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-end">
-                      <details className="group relative inline-block">
-                        <summary
-                          aria-label={`Actions for ${u.email}`}
-                          className="flex size-8 cursor-pointer list-none items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground [&::-webkit-details-marker]:hidden"
-                        >
-                          <IconMore size={16} />
-                        </summary>
-                        <div className="absolute end-0 top-full z-30 mt-1 flex min-w-52 flex-col border border-border bg-popover py-1 text-start shadow-lg">
-                          <MenuItem icon={<IconEdit size={14} />} onClick={() => setMode({ kind: "edit", user: u })}>
-                            Edit role and projects
-                          </MenuItem>
-                          <MenuItem icon={<IconLock size={14} />} onClick={() => setMode({ kind: "reset", user: u })}>
-                            Reset password
-                          </MenuItem>
-                          {!self && (
-                            <MenuItem icon={<IconLogout size={14} />} onClick={() => revoke(u)}>
-                              Sign out everywhere
-                            </MenuItem>
-                          )}
-                          {!self &&
-                            (u.isActive ? (
-                              <MenuItem icon={<IconArchive size={14} />} danger onClick={() => setActive(u, false)}>
-                                Deactivate
-                              </MenuItem>
-                            ) : (
-                              <MenuItem icon={<IconRefresh size={14} />} onClick={() => setActive(u, true)}>
-                                Reactivate
-                              </MenuItem>
-                            ))}
-                        </div>
-                      </details>
-                    </td>
-                  </tr>
-                )
-              })
+              users.map((u) => (
+                <tr key={u.id} className={cn("border-t border-border", !u.isActive && "opacity-50")}>
+                  <td className="px-3.5 py-3 font-mono text-[13px] font-medium">
+                    <UserName user={u} self={u.id === currentUserId} />
+                  </td>
+                  <td className="px-3.5 py-3 font-mono text-[13px] text-muted-foreground">{u.email}</td>
+                  <td className="px-3.5 py-3"><RolePill user={u} /></td>
+                  <td className="px-3.5 py-3"><StatusPill user={u} /></td>
+                  <td className="px-3.5 py-3 font-mono text-[13px] text-muted-foreground">
+                    {u.role === "admin" ? "all" : u.projectIds.length}
+                  </td>
+                  <td className="px-3.5 py-3 font-mono text-xs text-muted-foreground"><LastLogin user={u} /></td>
+                  <td className="px-2 py-2 text-end">{menu(u)}</td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
+
+      <ul className="flex flex-col border border-border bg-card lg:hidden">
+        {!loaded ? (
+          <li className="px-4 py-5 font-mono text-xs text-muted-foreground">Loading...</li>
+        ) : (
+          users.map((u) => (
+            <li key={u.id} className={cn("flex items-start gap-3 border-t border-border px-4 py-3.5 first:border-t-0", !u.isActive && "opacity-50")}>
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <span className="font-mono text-[13px] font-medium"><UserName user={u} self={u.id === currentUserId} /></span>
+                <span className="truncate font-mono text-xs text-muted-foreground">{u.email}</span>
+                <span className="flex flex-wrap items-center gap-2">
+                  <RolePill user={u} />
+                  <StatusPill user={u} />
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {u.role === "admin" ? "all projects" : `${u.projectIds.length} ${u.projectIds.length === 1 ? "project" : "projects"}`}
+                  </span>
+                </span>
+                <span className="font-mono text-xs text-muted-foreground"><LastLogin user={u} /></span>
+              </div>
+              {menu(u)}
+            </li>
+          ))
+        )}
+      </ul>
 
       {mode && (
         <UserDialog
@@ -393,6 +402,45 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
         />
       )}
     </div>
+  )
+}
+
+function UserName({ user, self }: { user: User; self: boolean }) {
+  return (
+    <span className="flex items-center gap-2">
+      <IconUser size={14} className="shrink-0 text-muted-foreground" />
+      <span>
+        {user.name ?? "Unnamed"}
+        {self && <span className="ms-1.5 text-muted-foreground">(you)</span>}
+      </span>
+    </span>
+  )
+}
+
+function RolePill({ user }: { user: User }) {
+  return (
+    <Pill tone={user.role === "admin" ? "strong" : "muted"}>
+      {user.role === "admin" && <IconSettings size={11} />}
+      {user.role}
+    </Pill>
+  )
+}
+
+function StatusPill({ user }: { user: User }) {
+  return (
+    <Pill tone={user.isActive ? "ok" : "muted"}>
+      {user.isActive ? <IconCheck size={11} /> : <IconArchive size={11} />}
+      {user.isActive ? "Active" : "Deactivated"}
+    </Pill>
+  )
+}
+
+function LastLogin({ user }: { user: User }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <IconClock size={12} className="shrink-0" />
+      {user.lastLoginAt ? `Signed in ${relativeTime(new Date(user.lastLoginAt))}` : "Never signed in"}
+    </span>
   )
 }
 
