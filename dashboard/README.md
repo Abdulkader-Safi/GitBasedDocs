@@ -64,6 +64,7 @@ bun lib/sync/schedule.check.ts
 bun lib/render/markdown.check.ts
 bun lib/viewer/tree.check.ts
 bun lib/github/webhook.check.ts
+bun lib/github/commits.check.ts
 DATABASE_URL=file:./data/access-check.db bun lib/access/access.check.ts
 DATABASE_URL=file:./data/search-check.db bun lib/search/search.check.ts
 DATABASE_URL=file:./data/users-check.db bun lib/users/users.check.ts

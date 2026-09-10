@@ -37,6 +37,7 @@ import { Chip } from "@/components/ui/status-badge"
 import {
   IconArrowLeft,
   IconArrowRight,
+  IconBranch,
   IconClock,
   IconList,
   IconRepo,
@@ -244,6 +245,12 @@ export default async function DocPage({
   const githubUrl = connection
     ? `https://github.com/${connection.owner}/${connection.repo}/blob/${encodeURIComponent(connection.branch)}/${page.path.split("/").map(encodeURIComponent).join("/")}`
     : null
+  // Writers get the commit as a link; viewers see the short sha only, since
+  // the repo is private.
+  const commitUrl =
+    connection && page.lastCommitSha
+      ? `https://github.com/${connection.owner}/${connection.repo}/commit/${page.lastCommitSha}`
+      : null
   const { prev, next } = neighbours(tree, slug)
 
   return shell(
@@ -300,10 +307,35 @@ export default async function DocPage({
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
+        {/* When and by whom, from the last commit that touched the file; the
+            sync time is the fallback for pages synced before commits were
+            recorded. */}
+        <span
+          className="flex items-center gap-1.5"
+          title={(page.lastCommitAt ?? page.updatedAt).toUTCString()}
+        >
           <IconClock size={12} />
-          Updated {relativeTime(page.updatedAt)}
+          Updated {relativeTime(page.lastCommitAt ?? page.updatedAt)}
+          {page.lastCommitAuthor && <> by {page.lastCommitAuthor}</>}
         </span>
+        {page.lastCommitSha &&
+          (commitUrl ? (
+            <a
+              href={commitUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              title={page.lastCommitMessage || undefined}
+              className="flex items-center gap-1.5 hover:text-foreground"
+            >
+              <IconBranch size={12} />
+              {page.lastCommitSha.slice(0, 7)}
+            </a>
+          ) : (
+            <span className="flex items-center gap-1.5" title={page.lastCommitMessage || undefined}>
+              <IconBranch size={12} />
+              {page.lastCommitSha.slice(0, 7)}
+            </span>
+          ))}
         {githubUrl && (
           <a
             href={githubUrl}

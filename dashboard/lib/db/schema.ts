@@ -133,6 +133,11 @@ export const docPages = sqliteTable(
     headSha: text("head_sha"),
     status: text("status").notNull().default("active"),
     isDraft: integer("is_draft").notNull().default(0),
+    // Newest commit that touched the file, for "Updated ... by ..." on the page.
+    lastCommitSha: text("last_commit_sha"),
+    lastCommitAuthor: text("last_commit_author"),
+    lastCommitAt: integer("last_commit_at", { mode: "timestamp_ms" }),
+    lastCommitMessage: text("last_commit_message").notNull().default(""),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [uniqueIndex("doc_pages_project_path_uidx").on(t.projectId, t.path)]

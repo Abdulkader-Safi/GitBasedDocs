@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db"
 import { docPages, projects, repoConnections, syncLogs } from "@/lib/db/schema"
 import { GitHubError, gh } from "@/lib/github/client"
 import { getConnection } from "@/lib/github/connection"
+import { lastCommit } from "@/lib/github/commits"
 import { mimeFor, syncAssets, type WantedAsset } from "@/lib/sync/assets"
 import { stripComments } from "@/lib/render/comments"
 
@@ -336,6 +337,7 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
 
     const parsed = matter(raw)
     const data = parsed.data as Record<string, unknown>
+    const commit = await lastCommit(owner, repo, headSha ?? branch, entry.path)
     // %% comments %% never reach the database, so they cannot be searched,
     // rendered or shown in a snippet.
     const body = stripComments(parsed.content)
@@ -353,6 +355,10 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
       headSha,
       status: "active",
       isDraft: isDraftFrom(data) ? 1 : 0,
+      lastCommitSha: commit?.sha ?? null,
+      lastCommitAuthor: commit?.author ?? null,
+      lastCommitAt: commit?.at ?? null,
+      lastCommitMessage: commit?.message ?? "",
       updatedAt: new Date(),
     }
 
