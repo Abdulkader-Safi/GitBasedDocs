@@ -319,6 +319,10 @@
 /* Reader page width and outline panel, from data attributes set on <html>
    before first paint (lib/viewer/prefs.ts). Narrow keeps a comfortable line
    length; wide makes room for tables and diagrams; full uses the window. */
+/* While any modal dialog is open (pages drawer, search, a diagram), the page
+   behind it stays still. */
+html:has(dialog[open]:modal) { overflow: hidden; }
+
 /* A diagram opened larger. Outside .doc-prose because the dialog lives on
    <body>. */
 .mermaid-dialog {
