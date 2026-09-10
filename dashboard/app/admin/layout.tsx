@@ -1,6 +1,7 @@
 import { getConnection } from "@/lib/github/connection"
 import { auth } from "@/lib/auth/session"
 import { TopBar } from "@/components/chrome/top-bar"
+import { AdminNav } from "@/components/admin/admin-nav"
 import { IconWarning } from "@/components/icons"
 
 export default async function AdminLayout({
@@ -25,7 +26,13 @@ export default async function AdminLayout({
           GitHub: {banner}
         </p>
       )}
-      <main className="flex-1">{children}</main>
+      <div className="flex flex-1 flex-col lg:flex-row">
+        <AdminNav />
+        <main className="min-w-0 flex-1">
+          {/* One width for every admin page. */}
+          <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6 px-4 py-8 sm:px-6">{children}</div>
+        </main>
+      </div>
     </div>
   )
 }

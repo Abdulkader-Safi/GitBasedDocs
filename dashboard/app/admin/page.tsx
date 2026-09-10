@@ -1,52 +1,48 @@
 import Link from "next/link"
 import { desc } from "drizzle-orm"
+import { cn } from "cn"
 
 import { requireAdmin } from "@/lib/auth/admin"
 import { getDb } from "@/lib/db"
 import { syncLogs } from "@/lib/db/schema"
-import { relativeTime } from "@/lib/format"
 import { getConnection } from "@/lib/github/connection"
-import { listProjects } from "@/lib/projects/projects"
+import { listProjectsWithCounts } from "@/lib/projects/projects"
 import { deniedInLastDays } from "@/lib/access/log"
 import { listUsers } from "@/lib/users/users"
 import { intervalFromEnv } from "@/lib/sync/schedule"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatusBadge, type ConnectionStatus } from "@/components/ui/status-badge"
 import { SyncPanel } from "@/components/admin/sync-panel"
-import { DangerZone } from "@/components/admin/danger-zone"
-import { listAudit, PHRASES, PURGE_AFTER_DAYS } from "@/lib/admin/danger"
-import { IconArrowRight, IconFolder, IconRefresh, IconRepo, IconShieldCheck, IconUser } from "@/components/icons"
+import { SyncRunsTable } from "@/components/admin/sync-runs"
+import { IconArrowRight } from "@/components/icons"
 
-function AdminCard({
+function Tile({
   href,
-  icon,
-  title,
+  label,
+  value,
   meta,
-  trailing,
+  alert,
 }: {
   href: string
-  icon: React.ReactNode
-  title: string
+  label: string
+  value: React.ReactNode
   meta: string
-  trailing?: React.ReactNode
+  alert?: boolean
 }) {
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3.5 border border-border bg-card px-5 py-4 transition-colors hover:border-ring"
+      className={cn(
+        "group flex min-w-0 flex-col gap-2 border bg-card px-4 py-3.5 transition-colors hover:border-ring",
+        alert ? "border-destructive/60" : "border-border",
+      )}
     >
-      <span className="flex size-9 shrink-0 items-center justify-center bg-muted">{icon}</span>
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className="font-heading text-base font-medium text-foreground">{title}</span>
-        <span className="truncate font-mono text-xs text-muted-foreground">{meta}</span>
+      <span className="flex items-center justify-between font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+        {label}
+        <IconArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
       </span>
-      <span className="ms-auto flex shrink-0 items-center gap-3">
-        {trailing}
-        <IconArrowRight
-          size={16}
-          className="text-muted-foreground transition-transform group-hover:translate-x-0.5"
-        />
-      </span>
+      <span className={cn("font-heading text-2xl leading-none font-semibold", alert && "text-destructive")}>{value}</span>
+      <span className="truncate font-mono text-xs text-muted-foreground">{meta}</span>
     </Link>
   )
 }
@@ -54,19 +50,17 @@ function AdminCard({
 export default async function AdminPage() {
   await requireAdmin()
   const db = await getDb()
-  const [connection, projects, denied, people, [lastRun], audit] = await Promise.all([
+  const [connection, projects, denied, people, runs] = await Promise.all([
     getConnection(),
-    listProjects(),
+    listProjectsWithCounts(),
     deniedInLastDays(7),
     listUsers(),
-    db.select().from(syncLogs).orderBy(desc(syncLogs.createdAt)).limit(1),
-    listAudit(),
+    db.select().from(syncLogs).orderBy(desc(syncLogs.createdAt)).limit(5),
   ])
+
+  const active = projects.filter((p) => p.isActive)
+  const pages = active.reduce((n, p) => n + p.pageCount, 0)
   const admins = people.filter((u) => u.role === "admin" && u.isActive).length
-
-  const active = projects.filter((p) => p.isActive).length
-  const archived = projects.length - active
-
   const status: ConnectionStatus | null = !connection?.lastCheckedAt
     ? null
     : connection.status === "error"
@@ -76,76 +70,41 @@ export default async function AdminPage() {
         : "connected"
 
   return (
-    <div className="mx-auto flex w-full max-w-[896px] flex-col gap-6 px-6 py-8">
-      <PageHeader
-        title="Admin"
-        description="Connection health, projects and sync"
-      />
+    <div className="flex flex-col gap-6">
+      <PageHeader title="Overview" description="Connection health, content and people at a glance" />
 
-      <div className="flex flex-col gap-3">
-        <AdminCard
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <Tile
           href="/admin/connection"
-          icon={<IconRepo size={17} />}
-          title="GitHub connection"
-          meta={
-            connection
-              ? `${connection.owner}/${connection.repo} · ${connection.branch}`
-              : "No repo linked yet"
-          }
-          trailing={
-            status ? (
-              <StatusBadge status={status} />
-            ) : (
-              <span className="font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-                {connection ? "Not tested yet" : "Set up"}
-              </span>
-            )
-          }
+          label="GitHub"
+          value={status ? <StatusBadge status={status} /> : <span className="text-muted-foreground">Not set</span>}
+          meta={connection ? `${connection.owner}/${connection.repo} · ${connection.branch}` : "Link a repo to start"}
+          alert={status === "error"}
         />
-        <AdminCard
-          href="/admin/projects"
-          icon={<IconFolder size={17} />}
-          title="Projects"
-          meta={`${active} active · ${archived} archived`}
-        />
-        <AdminCard
-          href="/admin/users"
-          icon={<IconUser size={17} />}
-          title="Users"
-          meta={`${people.length} ${people.length === 1 ? "account" : "accounts"} · ${admins} ${admins === 1 ? "admin" : "admins"}`}
-        />
-        <AdminCard
-          href="/admin/sync"
-          icon={<IconRefresh size={17} />}
-          title="Sync runs"
-          meta={
-            lastRun
-              ? `Last run ${relativeTime(lastRun.createdAt)} · ${lastRun.status === "error" ? "failed" : lastRun.status === "unchanged" ? "no change" : "synced"}`
-              : "No runs yet"
-          }
-        />
-        <AdminCard
-          href="/admin/access"
-          icon={<IconShieldCheck size={17} />}
-          title="Access log"
-          meta={`${denied} denied ${denied === 1 ? "attempt" : "attempts"} in the last 7 days`}
-        />
+        <Tile href="/admin/projects" label="Projects" value={active.length} meta={`${projects.length - active.length} archived`} />
+        <Tile href="/admin/projects" label="Pages" value={pages} meta="in active projects" />
+        <Tile href="/admin/users" label="Users" value={people.length} meta={`${admins} ${admins === 1 ? "admin" : "admins"}`} />
+        <Tile href="/admin/access" label="Denied" value={denied} meta="page opens, last 7 days" alert={denied > 0} />
       </div>
 
       {connection ? (
         <SyncPanel intervalMinutes={intervalFromEnv(process.env.SYNC_INTERVAL_MINUTES) / 60_000} />
       ) : (
         <p className="font-mono text-xs text-muted-foreground">
-          Link a repo on the GitHub connection page, then sync from here.
+          Link a repo on the <Link href="/admin/connection" className="underline underline-offset-4">connection page</Link>, then sync from here.
         </p>
       )}
 
-      <DangerZone
-        projects={projects.filter((p) => p.isActive).map((p) => ({ id: p.id, name: p.name, slug: p.slug }))}
-        audit={audit.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
-        purgeDays={PURGE_AFTER_DAYS}
-        phrases={PHRASES}
-      />
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-heading text-base font-medium">Recent sync runs</h2>
+          <Link href="/admin/sync" className="flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground">
+            All runs
+            <IconArrowRight size={12} />
+          </Link>
+        </div>
+        <SyncRunsTable runs={runs} empty="No sync has run yet." />
+      </section>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { cn } from "cn"
 
@@ -10,8 +10,11 @@ import { ErrorText, Field } from "@/components/ui/field"
 import { PageHeader } from "@/components/ui/page-header"
 import {
   IconArchive,
+  IconCheck,
   IconChevronDown,
-  IconFolder,
+  IconClose,
+  IconEdit,
+  IconEye,
   IconPlus,
   IconRefresh,
   IconRepo,
@@ -179,16 +182,99 @@ function MembersPanel({ project, onChange }: { project: Project; onChange: () =>
   )
 }
 
+type DialogMode = { kind: "create" } | { kind: "edit"; project: Project }
+
+function ProjectDialog({ mode, onClose, onSaved }: { mode: DialogMode; onClose: () => void; onSaved: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null)
+  const editing = mode.kind === "edit" ? mode.project : null
+  const [name, setName] = useState(editing?.name ?? "")
+  const [slug, setSlug] = useState(editing?.slug ?? "")
+  const [repoPath, setRepoPath] = useState(editing?.repoPath ?? "")
+  const [description, setDescription] = useState(editing?.description ?? "")
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  // showModal focuses the close button; start on the first field instead.
+  useEffect(() => {
+    ref.current?.showModal()
+    ref.current?.querySelector("input")?.focus()
+  }, [])
+
+  // On create, typing the name fills the slug; the slug stays editable.
+  function onName(value: string) {
+    setName(value)
+    if (!editing) setSlug(value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48))
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    const res = await fetch(editing ? `/api/admin/projects/${editing.id}` : "/api/admin/projects", {
+      method: editing ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, slug, repoPath, description }),
+    })
+    const data = await res.json()
+    setBusy(false)
+    if (!res.ok) {
+      setError(data.error ?? "Save failed")
+      return
+    }
+    onSaved()
+    ref.current?.close()
+  }
+
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && ref.current?.close()}
+      className="fixed inset-x-0 mx-auto mt-[10vh] mb-auto w-[calc(100%-2rem)] max-w-[520px] border border-border bg-popover p-0 text-foreground shadow-2xl backdrop:bg-black/50"
+    >
+      <form onSubmit={save} className="flex flex-col gap-4 px-6 py-5">
+        <div className="flex items-center gap-2">
+          <h2 className="min-w-0 truncate font-heading text-base font-medium">
+            {editing ? `Edit ${editing.name}` : "New project"}
+          </h2>
+          <button type="button" aria-label="Close" onClick={() => ref.current?.close()} className="ms-auto text-muted-foreground hover:text-foreground">
+            <IconClose size={16} />
+          </button>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Name" htmlFor="pname">
+            <Input id="pname" required value={name} onChange={(e) => onName(e.target.value)} placeholder="Acme API" />
+          </Field>
+          <Field label="Slug" htmlFor="pslug" hint={editing ? "Changing it changes every link to this project." : undefined}>
+            <Input id="pslug" required value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="acme-api" />
+          </Field>
+        </div>
+        <Field label="Repo path" htmlFor="ppath" hint="A folder in the repo, or leave empty for the whole repo.">
+          <Input id="ppath" value={repoPath} onChange={(e) => setRepoPath(e.target.value)} placeholder="whole repo" />
+        </Field>
+        <Field label="Description" htmlFor="pdesc" hint="Shown on the reader home card.">
+          <Input id="pdesc" value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+        {error && <ErrorText>{error}</ErrorText>}
+        <div className="flex gap-2">
+          <Button type="submit" disabled={busy}>
+            <IconCheck size={16} />
+            {busy ? "Saving..." : editing ? "Save" : "Create project"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => ref.current?.close()}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </dialog>
+  )
+}
+
 export function ProjectsManager() {
   const [rows, setRows] = useState<Project[]>([])
   const [loaded, setLoaded] = useState(false)
   const [open, setOpen] = useState<string | null>(null)
-  const [name, setName] = useState("")
-  const [slug, setSlug] = useState("")
-  const [repoPath, setRepoPath] = useState("")
-  const [description, setDescription] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [mode, setMode] = useState<DialogMode | null>(null)
 
   async function refresh() {
     const res = await fetch("/api/admin/projects")
@@ -205,34 +291,7 @@ export function ProjectsManager() {
       })
   }, [])
 
-  // Typing the name fills the slug; the slug stays editable.
-  function suggestSlug(value: string) {
-    setName(value)
-    setSlug(value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48))
-  }
-
-  async function create() {
-    setBusy(true)
-    setError(null)
-    const res = await fetch("/api/admin/projects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, slug, repoPath, description }),
-    })
-    const data = await res.json()
-    setBusy(false)
-    if (!res.ok) {
-      setError(data.error ?? "Create failed")
-      return
-    }
-    setName("")
-    setSlug("")
-    setRepoPath("")
-    setDescription("")
-    refresh()
-  }
-
-  // Archiving lives in the admin danger zone; bringing a project back is safe.
+  // Archiving lives in the danger zone; bringing a project back is safe.
   async function restore(p: Project) {
     const res = await fetch(`/api/admin/projects/${p.id}`, {
       method: "PATCH",
@@ -244,68 +303,61 @@ export function ProjectsManager() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Projects" description="One project maps to one folder in the content repo" />
+      <PageHeader
+        title="Projects"
+        description="One project maps to one folder in the content repo"
+        actions={
+          <Button onClick={() => setMode({ kind: "create" })}>
+            <IconPlus size={16} />
+            New project
+          </Button>
+        }
+      />
 
       <section className="border border-border bg-card">
-        <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
-          <IconPlus size={17} />
-          <h2 className="font-heading text-base font-medium">New project</h2>
-        </div>
-        <div className="flex flex-col gap-4 px-5 py-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" htmlFor="pname">
-              <Input id="pname" value={name} onChange={(e) => suggestSlug(e.target.value)} placeholder="Acme API" />
-            </Field>
-            <Field label="Slug" htmlFor="pslug">
-              <Input id="pslug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="acme-api" />
-            </Field>
-          </div>
-          <Field label="Repo path" htmlFor="ppath" hint="A folder in the repo, or leave empty for the whole repo.">
-            <Input id="ppath" value={repoPath} onChange={(e) => setRepoPath(e.target.value)} placeholder="whole repo" />
-          </Field>
-          <Field label="Description" htmlFor="pdesc">
-            <Input id="pdesc" value={description} onChange={(e) => setDescription(e.target.value)} />
-          </Field>
-          {error && <ErrorText>{error}</ErrorText>}
-          <div>
-            <Button onClick={create} disabled={busy}>
-              <IconPlus size={16} />
-              {busy ? "Creating..." : "Create project"}
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="border border-border bg-card">
-        <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
-          <IconFolder size={17} />
-          <h2 className="font-heading text-base font-medium">Projects ({rows.length})</h2>
-        </div>
         {!loaded ? (
           <p className="px-5 py-4 font-mono text-xs text-muted-foreground">Loading...</p>
         ) : rows.length === 0 ? (
-          <p className="px-5 py-4 font-mono text-[13px] text-muted-foreground">No projects yet.</p>
+          <div className="flex flex-col items-start gap-3 px-5 py-6">
+            <p className="font-mono text-[13px] text-muted-foreground">No projects yet. A project turns a folder of Markdown into a docs site.</p>
+            <Button variant="outline" onClick={() => setMode({ kind: "create" })}>
+              <IconPlus size={15} />
+              Create the first one
+            </Button>
+          </div>
         ) : (
           <ul>
             {rows.map((p, i) => (
               <li key={p.id} className={cn(i > 0 && "border-t border-border")}>
-                <div className={cn("flex flex-wrap items-center gap-3 px-5 py-3", !p.isActive && "opacity-60")}>
-                  <IconRepo size={15} className="shrink-0 text-muted-foreground" />
-                  <div className="flex min-w-0 flex-col gap-1">
+                <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-2.5 px-5 py-3.5", !p.isActive && "opacity-60")}>
+                  <span className="flex size-8 shrink-0 items-center justify-center bg-muted">
+                    <IconRepo size={15} />
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="flex items-center gap-2">
-                      <span className="font-mono text-[13px] font-medium">{p.name}</span>
+                      <span className="truncate font-mono text-[13px] font-medium">{p.name}</span>
                       {!p.isActive && (
-                        <span className="flex items-center gap-1 bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+                        <span className="flex items-center gap-1 border border-border px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
                           <IconArchive size={10} />
                           Archived
                         </span>
                       )}
                     </span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      /{p.slug} · {p.repoPath || "whole repo"} · {p.pageCount} {p.pageCount === 1 ? "page" : "pages"}
+                    <span className="truncate font-mono text-xs text-muted-foreground">
+                      /p/{p.slug} · {p.repoPath || "whole repo"} · {p.pageCount} {p.pageCount === 1 ? "page" : "pages"}
                     </span>
                   </div>
-                  <div className="ms-auto flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {p.isActive && (
+                      <Link href={`/p/${p.slug}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                        <IconEye size={14} />
+                        Open
+                      </Link>
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => setMode({ kind: "edit", project: p })}>
+                      <IconEdit size={14} />
+                      Edit
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -314,13 +366,10 @@ export function ProjectsManager() {
                     >
                       <IconUser size={14} />
                       Members ({p.memberCount})
-                      <IconChevronDown
-                        size={12}
-                        className={cn("transition-transform", open === p.id && "rotate-180")}
-                      />
+                      <IconChevronDown size={12} className={cn("transition-transform", open === p.id && "rotate-180")} />
                     </Button>
                     {p.isActive ? (
-                      <Link href="/admin#danger-zone" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                      <Link href="/admin/danger" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-destructive")}>
                         <IconArchive size={14} />
                         Archive
                       </Link>
@@ -338,6 +387,15 @@ export function ProjectsManager() {
           </ul>
         )}
       </section>
+
+      {mode && (
+        <ProjectDialog
+          key={mode.kind === "create" ? "create" : mode.project.id}
+          mode={mode}
+          onClose={() => setMode(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   )
 }

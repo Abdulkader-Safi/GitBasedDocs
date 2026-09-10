@@ -25,7 +25,7 @@ export default async function AccessLogPage({ searchParams }: { searchParams: Se
   const filtered = Boolean(filter.userId || filter.projectId || filter.result)
 
   return (
-    <div className="mx-auto flex w-full max-w-[1464px] flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Access log"
         description="Page opens and denied attempts, newest first, last 500"
@@ -66,12 +66,19 @@ export default async function AccessLogPage({ searchParams }: { searchParams: Se
         )}
       </form>
 
-      <div className="overflow-x-auto border border-border bg-card">
-        <table className="w-full min-w-[760px] border-collapse text-start">
+      {/* Table from md up; below that each event is a stacked row. */}
+      <div className="hidden border border-border bg-card md:block">
+        <table className="w-full table-fixed border-collapse text-start">
           <thead>
             <tr className="bg-muted">
-              {["When", "User", "Project", "Path", "Result"].map((h) => (
-                <th key={h} className="px-3.5 py-2.5 text-start font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+              {[
+                ["When", "w-36"],
+                ["User", "w-[28%]"],
+                ["Project", "w-[16%]"],
+                ["Path", ""],
+                ["Result", "w-28"],
+              ].map(([h, w]) => (
+                <th key={h} className={cn(w, "px-3.5 py-2.5 text-start font-mono text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase")}>
                   {h}
                 </th>
               ))}
@@ -90,21 +97,13 @@ export default async function AccessLogPage({ searchParams }: { searchParams: Se
                   <td className="px-3.5 py-2.5 font-mono text-xs whitespace-nowrap text-muted-foreground" title={e.createdAt.toISOString()}>
                     <span className="flex items-center gap-1.5"><IconClock size={12} />{relativeTime(e.createdAt)}</span>
                   </td>
-                  <td className="px-3.5 py-2.5 font-mono text-[13px]">
-                    <span className="flex items-center gap-1.5"><IconUser size={13} className="text-muted-foreground" />{e.email ?? "deleted user"}</span>
+                  <td className="truncate px-3.5 py-2.5 font-mono text-[13px]" title={e.email ?? undefined}>
+                    <span className="flex min-w-0 items-center gap-1.5"><IconUser size={13} className="shrink-0 text-muted-foreground" /><span className="truncate">{e.email ?? "deleted user"}</span></span>
                   </td>
                   <td className="px-3.5 py-2.5 font-mono text-[13px] text-muted-foreground">{e.projectName ?? "no such project"}</td>
-                  <td className="max-w-[420px] truncate px-3.5 py-2.5 font-mono text-xs text-muted-foreground" title={e.path}>{e.path}</td>
+                  <td className="truncate px-3.5 py-2.5 font-mono text-xs text-muted-foreground" title={e.path}>{e.path}</td>
                   <td className="px-3.5 py-2.5">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.08em] uppercase",
-                        e.allowed ? "border-status-success text-status-success" : "border-destructive text-destructive",
-                      )}
-                    >
-                      {e.allowed ? <IconCheck size={11} /> : <IconClose size={11} />}
-                      {e.allowed ? "Allowed" : "Denied"}
-                    </span>
+                    <Result allowed={Boolean(e.allowed)} />
                   </td>
                 </tr>
               ))
@@ -112,6 +111,44 @@ export default async function AccessLogPage({ searchParams }: { searchParams: Se
           </tbody>
         </table>
       </div>
+
+      <ul className="flex flex-col border border-border bg-card md:hidden">
+        {events.length === 0 ? (
+          <li className="px-4 py-6 font-mono text-[13px] text-muted-foreground">
+            {filtered ? "Nothing matches these filters." : "No page opens logged yet."}
+          </li>
+        ) : (
+          events.map((e) => (
+            <li key={e.id} className="flex flex-col gap-1.5 border-t border-border px-4 py-3 first:border-t-0">
+              <span className="flex items-center justify-between gap-2">
+                <Result allowed={Boolean(e.allowed)} />
+                <span className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground" title={e.createdAt.toISOString()}>
+                  <IconClock size={12} />
+                  {relativeTime(e.createdAt)}
+                </span>
+              </span>
+              <span className="truncate font-mono text-[13px]">{e.email ?? "deleted user"}</span>
+              <span className="truncate font-mono text-xs text-muted-foreground">
+                {e.projectName ?? "no such project"} · {e.path}
+              </span>
+            </li>
+          ))
+        )}
+      </ul>
     </div>
+  )
+}
+
+function Result({ allowed }: { allowed: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit items-center gap-1 border px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-[0.08em] uppercase",
+        allowed ? "border-status-success text-status-success" : "border-destructive text-destructive",
+      )}
+    >
+      {allowed ? <IconCheck size={11} /> : <IconClose size={11} />}
+      {allowed ? "Allowed" : "Denied"}
+    </span>
   )
 }

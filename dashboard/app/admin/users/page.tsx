@@ -5,7 +5,7 @@ import { UsersManager } from "./users-manager"
 export default async function UsersPage() {
   const session = await requireAdmin()
   return (
-    <div className="mx-auto w-full max-w-[1464px] px-6 py-8">
+    <div className="flex flex-col gap-6">
       <UsersManager currentUserId={session.user.id} />
     </div>
   )

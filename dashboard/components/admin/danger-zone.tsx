@@ -14,7 +14,6 @@ import {
   IconRefresh,
   IconTrash,
   IconUser,
-  IconWarning,
 } from "@/components/icons"
 
 interface ProjectChoice {
@@ -201,18 +200,7 @@ export function DangerZone({
   }
 
   return (
-    <section
-      id="danger-zone"
-      className="flex scroll-mt-20 flex-col border border-destructive/60 bg-card"
-    >
-      <div className="flex items-center gap-2.5 border-b border-destructive/60 px-5 py-4">
-        <IconWarning size={15} className="text-destructive" />
-        <h2 className="font-heading text-base font-medium">Danger zone</h2>
-        <span className="ms-auto font-mono text-xs text-muted-foreground">
-          Each action is logged with your name
-        </span>
-      </div>
-
+    <section className="flex flex-col border border-destructive/60 bg-card">
       <div className="divide-y divide-border">
         <DangerRow
           icon={<IconArchive size={14} />}

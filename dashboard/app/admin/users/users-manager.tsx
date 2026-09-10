@@ -80,8 +80,10 @@ function UserDialog({
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  // showModal focuses the close button; start on the first field instead.
   useEffect(() => {
     ref.current?.showModal()
+    ref.current?.querySelector("input")?.focus()
   }, [])
 
   function toggle(id: string) {

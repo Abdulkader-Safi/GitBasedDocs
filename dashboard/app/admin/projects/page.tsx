@@ -5,7 +5,7 @@ import { ProjectsManager } from "./projects-manager"
 export default async function ProjectsPage() {
   await requireAdmin()
   return (
-    <div className="mx-auto w-full max-w-[896px] px-6 py-8">
+    <div className="flex flex-col gap-6">
       <ProjectsManager />
     </div>
   )

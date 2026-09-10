@@ -1,11 +1,11 @@
 ---
 id: "admin-nav-and-layout-2026-09-10"
-status: "todo"
+status: "done"
 priority: "high"
 assignee: "safi"
 dueDate: null
 created: "2026-09-10T12:00:00.000Z"
-modified: "2026-09-10T12:00:00.000Z"
+modified: "2026-09-10T13:30:00.000Z"
 labels: ["ux", "admin"]
 order: 23
 ---
@@ -20,5 +20,15 @@ order: 23
 
 Done when:
 
-- [ ] Every admin page links to every other admin page.
-- [ ] Projects can be edited from the UI.
+- [x] Every admin page links to every other admin page.
+- [x] Projects can be edited from the UI.
+
+What changed:
+
+- `components/admin/admin-nav.tsx`: sidebar from `lg`, scrolling tab row below it that scrolls the current tab into view. "Back to docs" at the bottom of the sidebar.
+- `app/admin/layout.tsx` sets one 1120px content width; pages dropped their own widths.
+- Overview: five stat tiles (GitHub, projects, pages, users, denied in 7 days; denied turns red when above 0), the sync panel, and the last 5 runs. The runs table moved to `components/admin/sync-runs.tsx` and is shared with `/admin/sync`.
+- Danger zone moved to `/admin/danger`. Project "Archive" links there.
+- Projects: list first, one dialog for create and edit (name, slug, path, description), Open link, empty state with a create button.
+- Dialogs focus their first field (showModal was focusing the close button).
+- Page header stacks on phones. The access log also got a stacked phone layout with the result first.

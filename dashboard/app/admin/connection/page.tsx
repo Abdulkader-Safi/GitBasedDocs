@@ -17,7 +17,7 @@ export default async function ConnectionPage() {
     h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https")
 
   return (
-    <div className="mx-auto flex w-full max-w-[896px] flex-col gap-6 px-6 py-8">
+    <div className="flex flex-col gap-6">
       <ConnectionForm webhookUrl={`${proto}://${host}/api/webhooks/github`} />
       <SyncPanel intervalMinutes={intervalFromEnv(process.env.SYNC_INTERVAL_MINUTES) / 60_000} />
     </div>
