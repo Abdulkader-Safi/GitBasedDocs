@@ -84,5 +84,25 @@ const [changed] = await db.select().from(users).where(eq(users.id, dana))
 assert.equal(changed.mustChangePassword, 0, "the forced change is satisfied")
 assert.ok(await compare("another long one", changed.passwordHash!))
 
+// --- own profile ---------------------------------------------------------------------
+const row = async (id: string) => (await db.select().from(users).where(eq(users.id, id)))[0]
+await u.updateOwnProfile(dana, { name: "  Dana W  ", email: "dana@acme.io" })
+assert.equal((await row(dana)).name, "Dana W", "name trimmed, same email needs no password")
+await u.updateOwnProfile(dana, { name: "", email: "dana@acme.io" })
+assert.equal((await row(dana)).name, null, "empty name clears it; the top bar falls back to the email")
+await assert.rejects(u.updateOwnProfile(dana, { name: "", email: "new@acme.io" }), /current password/, "new email needs the password")
+await assert.rejects(u.updateOwnProfile(dana, { name: "", email: "new@acme.io", currentPassword: "wrong" }), /current password/)
+await assert.rejects(u.updateOwnProfile(dana, { name: "", email: "root@t.dev", currentPassword: "another long one" }), /already has an account/)
+await assert.rejects(u.updateOwnProfile(dana, { name: "", email: "not an email", currentPassword: "another long one" }), /valid email/)
+await assert.rejects(u.updateOwnProfile(dana, { name: "x".repeat(101), email: "dana@acme.io" }), /under 100/)
+await u.updateOwnProfile(dana, { name: "Dana", email: " New@Acme.IO ", currentPassword: "another long one" })
+assert.equal((await row(dana)).email, "new@acme.io", "email trimmed and lowercased")
+
+// --- admin edits someone else's email ------------------------------------------------------
+await u.updateUser(dana, { email: "Dana.Wu@Acme.io" }, adminId)
+assert.equal((await row(dana)).email, "dana.wu@acme.io")
+await assert.rejects(u.updateUser(dana, { email: "root@t.dev" }, adminId), /already has an account/)
+await u.updateUser(dana, { email: "dana.wu@acme.io" }, adminId) // own current email is not "taken"
+
 rmSync("./data/users-check.db", { force: true })
 console.log("user checks ok")

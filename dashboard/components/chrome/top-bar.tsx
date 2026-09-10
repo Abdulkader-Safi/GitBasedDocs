@@ -7,14 +7,15 @@ import { ThemeToggle } from "@/components/chrome/theme-toggle"
 // 56px bar with a bottom rule, on every page except login.
 export function TopBar({
   variant = "reader",
-  email,
+  name,
   isAdmin = false,
   lead,
   start,
   children,
 }: {
   variant?: "reader" | "admin"
-  email?: string | null
+  // The person's name, or their email when they have no name.
+  name?: string | null
   // Admins get a way into the admin area from the reader pages.
   isAdmin?: boolean
   // Before the wordmark, e.g. the mobile menu button.
@@ -66,14 +67,16 @@ export function TopBar({
           </Link>
         )}
         <ThemeToggle />
-        {email && (
+        {name && (
           <Link
-            href="/account/password"
-            title="Change password"
-            className="hidden items-center gap-1.5 font-mono text-[13px] text-muted-foreground hover:text-foreground md:flex"
+            href="/account"
+            title="Your account"
+            aria-label={`Your account: ${name}`}
+            className="flex h-8 min-w-8 shrink-0 items-center justify-center gap-1.5 font-mono text-[13px] text-muted-foreground hover:text-foreground pointer-coarse:h-10 pointer-coarse:min-w-10"
           >
             <IconUser size={14} />
-            {email}
+            {/* Icon only on phones; the name from md up. */}
+            <span className="hidden max-w-48 truncate md:inline">{name}</span>
           </Link>
         )}
         <SignOutButton />

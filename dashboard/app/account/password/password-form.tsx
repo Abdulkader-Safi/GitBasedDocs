@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -16,6 +17,8 @@ export function PasswordForm({ forced }: { forced: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  const Heading = forced ? "h1" : "h2"
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -47,12 +50,14 @@ export function PasswordForm({ forced }: { forced: boolean }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 border border-border bg-card px-6 py-6">
+    <form onSubmit={submit} className={cn("flex w-full flex-col gap-4 border border-border bg-card px-6 py-6", forced && "max-w-sm")}>
       <div className="flex flex-col gap-1.5">
-        <h1 className="flex items-center gap-2 font-heading text-lg font-medium">
+        {/* Alone on the forced first-login page it is the page title; on the
+            account page it is a section under "Account". */}
+        <Heading className="flex items-center gap-2 font-heading text-lg font-medium">
           <IconLock size={18} />
           {forced ? "Set your password" : "Change password"}
-        </h1>
+        </Heading>
         {forced && (
           <p className="font-mono text-xs text-muted-foreground">
             This account is using a password someone else set. Pick your own to continue.

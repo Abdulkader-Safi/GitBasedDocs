@@ -23,7 +23,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <TopBar email={session.user.email} isAdmin={session.user.role === "admin"} />
+      <TopBar name={session.user.name || session.user.email} isAdmin={session.user.role === "admin"} />
       <main className="flex-1 px-4 py-8 sm:px-6">
         <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6">
           <PageHeader

@@ -147,7 +147,7 @@ export default async function DocPage({
   const shell = (content: React.ReactNode, toc: OutlineItem[] = []) => (
     <div className="flex min-h-svh flex-col">
       <TopBar
-        email={session.user.email}
+        name={session.user.name || session.user.email}
         isAdmin={isAdmin}
         lead={<MobileNav>{sidebar}</MobileNav>}
         start={<ProjectSwitcher current={project} projects={visible} />}

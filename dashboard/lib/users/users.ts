@@ -10,6 +10,25 @@ export const ROLES = ["admin", "editor", "viewer"] as const
 export type Role = (typeof ROLES)[number]
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Email is the sign-in name: trimmed, lowercased, unique.
+function cleanEmail(raw: string) {
+  const email = raw.trim().toLowerCase()
+  if (!EMAIL.test(email)) throw new Error("Enter a valid email address.")
+  return email
+}
+
+async function assertEmailFree(email: string, exceptId?: string) {
+  const db = await getDb()
+  const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, email))
+  if (taken && taken.id !== exceptId) throw new Error("That email already has an account.")
+}
+
+function cleanName(raw: string) {
+  const name = raw.trim()
+  if (name.length > 100) throw new Error("Keep the name under 100 characters.")
+  return name || null
+}
+
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value)
 }
@@ -75,16 +94,14 @@ export async function createUser(
   input: { name: string; email: string; password: string; role: string; projectIds: string[] },
   actorId: string,
 ) {
-  const email = input.email.trim().toLowerCase()
-  const name = input.name.trim() || null
-  if (!EMAIL.test(email)) throw new Error("Enter a valid email address.")
+  const email = cleanEmail(input.email)
+  const name = cleanName(input.name)
   if (!isRole(input.role)) throw new Error("Pick a role.")
   const problem = passwordProblem(input.password, email)
   if (problem) throw new Error(problem)
 
   const db = await getDb()
-  const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, email))
-  if (taken) throw new Error("That email already has an account.")
+  await assertEmailFree(email)
 
   const id = randomUUID()
   const now = new Date()
@@ -106,7 +123,7 @@ export async function createUser(
 
 export async function updateUser(
   id: string,
-  input: { name?: string; role?: string; isActive?: boolean; projectIds?: string[] },
+  input: { name?: string; email?: string; role?: string; isActive?: boolean; projectIds?: string[] },
   actorId: string,
 ) {
   const db = await getDb()
@@ -115,6 +132,8 @@ export async function updateUser(
 
   const role = input.role ?? user.role
   if (input.role !== undefined && !isRole(input.role)) throw new Error("Pick a role.")
+  const email = input.email !== undefined ? cleanEmail(input.email) : undefined
+  if (email !== undefined && email !== user.email) await assertEmailFree(email, id)
 
   // Nobody can lock the admin area out: not by demoting or deactivating
   // themselves, and not by removing the last active admin.
@@ -125,7 +144,8 @@ export async function updateUser(
   await db
     .update(users)
     .set({
-      ...(input.name !== undefined ? { name: input.name.trim() || null } : {}),
+      ...(input.name !== undefined ? { name: cleanName(input.name) } : {}),
+      ...(email !== undefined ? { email } : {}),
       role,
       ...(input.isActive !== undefined ? { isActive: input.isActive ? 1 : 0 } : {}),
       updatedAt: new Date(),
@@ -160,6 +180,27 @@ export async function resetPassword(id: string, password: string) {
 export async function revokeSessions(id: string) {
   const db = await getDb()
   await db.update(users).set({ sessionsRevokedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, id))
+}
+
+// The person editing their own name and email. A new email needs the
+// current password, since the email is what they sign in with: a borrowed,
+// unlocked laptop should not be enough to take the account over.
+export async function updateOwnProfile(
+  id: string,
+  input: { name: string; email: string; currentPassword?: string },
+) {
+  const db = await getDb()
+  const [user] = await db.select().from(users).where(eq(users.id, id))
+  if (!user?.passwordHash) throw new Error("User not found.")
+  const name = cleanName(input.name)
+  const email = cleanEmail(input.email)
+  if (email !== user.email) {
+    if (!input.currentPassword || !(await compare(input.currentPassword, user.passwordHash))) {
+      throw new Error("Enter your current password to change your email.")
+    }
+    await assertEmailFree(email, id)
+  }
+  await db.update(users).set({ name, email, updatedAt: new Date() }).where(eq(users.id, id))
 }
 
 // The person changing their own password. Other sessions stay: revoking

@@ -60,7 +60,7 @@ function UserDialog({
   const ref = useRef<HTMLDialogElement>(null)
   const editing = mode.kind === "edit" ? mode.user : null
   const [name, setName] = useState(editing?.name ?? "")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(editing?.email ?? "")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState(editing?.role ?? "viewer")
   const [picked, setPicked] = useState<string[]>(editing?.projectIds ?? [])
@@ -85,7 +85,7 @@ function UserDialog({
       mode.kind === "create"
         ? ["/api/admin/users", "POST", { name, email, password, role, projectIds: picked }]
         : mode.kind === "edit"
-          ? [`/api/admin/users/${mode.user.id}`, "PATCH", { name, role, projectIds: picked }]
+          ? [`/api/admin/users/${mode.user.id}`, "PATCH", { name, email, role, projectIds: picked }]
           : [`/api/admin/users/${mode.user.id}/password`, "POST", { password }]
     const res = await fetch(url, {
       method,
@@ -130,8 +130,8 @@ function UserDialog({
             <Input id="u-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Dana Wu" />
           </Field>
         )}
-        {mode.kind === "create" && (
-          <Field label="Email" htmlFor="u-email">
+        {mode.kind !== "reset" && (
+          <Field label="Email" htmlFor="u-email" hint={mode.kind === "edit" ? "They sign in with this. Tell them if you change it." : undefined}>
             <Input id="u-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="dana@acme.io" />
           </Field>
         )}
@@ -269,7 +269,7 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
         >
           <IconMore size={16} />
         </summary>
-        <div className="absolute end-0 top-full z-30 mt-1 flex min-w-52 flex-col border border-border bg-popover py-1 text-start shadow-lg">
+        <div className="absolute end-0 top-full z-30 mt-1 flex w-60 flex-col border border-border bg-popover py-1 text-start whitespace-nowrap shadow-lg">
           <MenuItem icon={<IconEdit size={14} />} onClick={() => setMode({ kind: "edit", user: u })}>
             Edit role and projects
           </MenuItem>
@@ -335,7 +335,12 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
               <tr><td colSpan={7} className="px-3.5 py-5 font-mono text-xs text-muted-foreground">Loading...</td></tr>
             ) : (
               users.map((u) => (
-                <tr key={u.id} className={cn("border-t border-border", !u.isActive && "opacity-50")}>
+                <tr
+                  key={u.id}
+                  // Dim a deactivated person's details, not the actions cell: an
+                  // opacity on the row would make its dropdown see-through too.
+                  className={cn("border-t border-border", !u.isActive && "[&>td:not(:last-child)]:opacity-50")}
+                >
                   <td className="px-3.5 py-3 font-mono text-[13px] font-medium">
                     <UserName user={u} self={u.id === currentUserId} />
                   </td>
@@ -359,8 +364,8 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
           <li className="px-4 py-5 font-mono text-xs text-muted-foreground">Loading...</li>
         ) : (
           users.map((u) => (
-            <li key={u.id} className={cn("flex items-start gap-3 border-t border-border px-4 py-3.5 first:border-t-0", !u.isActive && "opacity-50")}>
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <li key={u.id} className="flex items-start gap-3 border-t border-border px-4 py-3.5 first:border-t-0">
+              <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", !u.isActive && "opacity-50")}>
                 <span className="font-mono text-[13px] font-medium"><UserName user={u} self={u.id === currentUserId} /></span>
                 <span className="truncate font-mono text-xs text-muted-foreground">{u.email}</span>
                 <span className="flex flex-wrap items-center gap-2">

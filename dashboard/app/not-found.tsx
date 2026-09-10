@@ -14,7 +14,7 @@ export default async function NotFound() {
   const session = await auth()
   return (
     <div className="flex min-h-svh flex-col">
-      {session && <TopBar email={session.user.email} isAdmin={session.user.role === "admin"} />}
+      {session && <TopBar name={session.user.name || session.user.email} isAdmin={session.user.role === "admin"} />}
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
         <span className="flex size-12 items-center justify-center bg-muted text-muted-foreground">
           <IconSearch size={22} />

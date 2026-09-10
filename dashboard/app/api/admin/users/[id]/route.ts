@@ -13,6 +13,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       id,
       {
         name: body.name !== undefined ? String(body.name) : undefined,
+        email: body.email !== undefined ? String(body.email) : undefined,
         role: body.role !== undefined ? String(body.role) : undefined,
         isActive: body.isActive !== undefined ? Boolean(body.isActive) : undefined,
         projectIds: Array.isArray(body.projectIds) ? body.projectIds.map(String) : undefined,
