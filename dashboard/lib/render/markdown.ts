@@ -331,6 +331,30 @@ function rehypeCallouts() {
 }
 
 // ---------------------------------------------------------------------------
+// ```mermaid fences become a diagram box holding the source as text. The
+// browser draws it (components/viewer/article.tsx); until then, or without
+// JS, the reader sees the source. Runs before Shiki so it is not highlighted.
+function rehypeMermaid() {
+  return (tree: Root) => {
+    visit(tree, "element", (node: Element, index, parent) => {
+      if (node.tagName !== "pre" || !parent || index === undefined) return
+      const code = node.children[0]
+      if (code?.type !== "element" || code.tagName !== "code") return
+      const classes = (code.properties.className as string[] | undefined) ?? []
+      if (!classes.includes("language-mermaid")) return
+      const source = code.children.map((c) => (c.type === "text" ? c.value : "")).join("")
+      parent.children[index] = {
+        type: "element",
+        tagName: "div",
+        properties: { className: ["mermaid-diagram"], role: "img", ariaLabel: "Diagram" },
+        children: [{ type: "text", value: source }],
+      }
+      return SKIP
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Shiki: VS Code grammars on the server, so readers get coloured spans and no
 // highlighter script. Grammars load the first time a page uses a language;
 // an unknown fence language falls back to plain text instead of failing.
@@ -433,6 +457,7 @@ export async function renderMarkdown(markdown: string, ctx: RenderContext): Prom
       properties: { className: ["heading-anchor"], ariaLabel: "Link to this section" },
       content: { type: "text", value: "#" },
     })
+    .use(rehypeMermaid)
     .use(rehypeShiki, shikiOptions)
     .use(rehypeWikiLinks, ctx)
     .use(rehypeCallouts)
@@ -461,7 +486,7 @@ export function clearRenderCache(): number {
 
 // Bump when the pipeline's output changes, so cached HTML from the old
 // pipeline is never served.
-const RENDER_VERSION = 2
+const RENDER_VERSION = 3
 
 export async function renderCached(
   pageKey: string,

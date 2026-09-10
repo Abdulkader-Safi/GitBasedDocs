@@ -260,11 +260,25 @@
   /* Shiki colours arrive as inline spans. Lines stretch to the full scroll
      width so highlighted and diff lines colour edge to edge. */
   .doc-prose pre code { display: inline-block; min-width: 100%; }
-  .doc-prose pre .line { display: inline-block; width: 100%; }
+  /* Lines reach into the block's side padding so a highlight or diff bar
+     sits in the margin, not on the first character. */
+  .doc-prose pre .line { display: inline-block; width: calc(100% + 2rem); margin-inline: -1rem; padding-inline: 1rem; }
   .doc-prose .code-lang { text-transform: none; letter-spacing: 0; }
   .doc-prose pre .line.highlighted { background: oklch(1 0 0 / 7%); box-shadow: inset 2px 0 var(--primary); }
   .doc-prose pre .line.diff.add { background: oklch(0.8 0.16 151 / 12%); box-shadow: inset 2px 0 oklch(0.8 0.16 151); }
   .doc-prose pre .line.diff.remove { background: oklch(0.7 0.19 22 / 14%); box-shadow: inset 2px 0 oklch(0.7 0.19 22); opacity: 0.75; }
+
+  /* Mermaid: the source shows dimmed until the browser draws it. */
+  .doc-prose .mermaid-diagram {
+    @apply overflow-x-auto border border-border bg-card p-4 text-center;
+  }
+  .doc-prose .mermaid-diagram:not([data-state]) {
+    @apply font-mono text-xs whitespace-pre text-start text-muted-foreground;
+  }
+  .doc-prose .mermaid-diagram svg { @apply mx-auto h-auto max-w-full; }
+  .doc-prose .mermaid-diagram[data-state="error"] { @apply text-start; }
+  .doc-prose .mermaid-diagram pre { @apply mt-2 bg-muted p-3 text-xs text-muted-foreground; }
+  .doc-prose .mermaid-error { @apply font-mono text-xs text-destructive; }
 
   @media print {
     .doc-prose pre { white-space: pre-wrap; word-break: break-word; }

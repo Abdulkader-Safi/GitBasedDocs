@@ -127,6 +127,15 @@ assert.doesNotMatch(diff, /\[!code/)
 // code is text: markup inside a fence is escaped, never parsed
 assert.doesNotMatch(await r("```html\n<script>alert(1)</script>\n```"), /<script>/)
 
+// --- mermaid ---------------------------------------------------------------------
+{
+  const m = await r("```mermaid\ngraph TD\n  A[Start] --> B{Ok?}\n  B -->|<b>yes</b>| C\n```")
+  assert.match(m, /<div class="mermaid-diagram" role="img" aria-label="Diagram">graph TD/)
+  assert.match(m, /--> B\{Ok\?\}/, "source kept as text for the browser to draw")
+  assert.match(m, /&#x3C;b>yes/, "a < in a label stays escaped")
+  assert.doesNotMatch(m, /<b>|code-block|shiki/, "never highlighted, never parsed as HTML")
+}
+
 // --- headings get ids and an anchor ---------------------------------------
 const h = await r("## Getting a token")
 assert.match(h, /<h2 id="getting-a-token">/)
