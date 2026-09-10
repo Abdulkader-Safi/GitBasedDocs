@@ -168,13 +168,43 @@ assert.doesNotMatch(await r("```html\n<script>alert(1)</script>\n```"), /<script
   assert.match(await r("$\\frac{1}{$ ok"), /katex-error|<p>/)
 }
 
+// --- comments, highlights, safe inline HTML ---------------------------------------
+{
+  const { stripComments } = await import("./comments")
+  assert.equal(stripComments("keep %%secret%% this"), "keep  this")
+  assert.equal(stripComments("a\n%%\nhidden\nlines\n%%\nb"), "a\nb", "a comment block leaves no blank lines")
+  assert.equal(stripComments("```\n%% not a comment %%\n```"), "```\n%% not a comment %%\n```", "fenced code keeps %%")
+  assert.equal(stripComments("open %% never closed\nstill hidden"), "open ")
+  assert.equal(stripComments("no comments here"), "no comments here")
+  const page = await r("Visible. %%internal: the password is hunter2%% Still visible.")
+  assert.doesNotMatch(page, /hunter2|%%/)
+  assert.match(page, /Visible\.\s+Still visible\./)
+
+  assert.match(await r("This is ==important== text."), /This is <mark>important<\/mark> text\./)
+  assert.doesNotMatch(await r("if a == b and c == d"), /<mark>/, "comparisons in prose are not highlights")
+  assert.doesNotMatch(await r("`x ==y== z`"), /<mark>/, "never inside code")
+
+  const html = await r("<details><summary>More</summary>\n\nHidden *text*.\n\n</details>\n\nPress <kbd>Ctrl</kbd>+<kbd>K</kbd>, H<sub>2</sub>O, x<sup>2</sup>")
+  assert.match(html, /<details><summary>More<\/summary>/)
+  assert.match(html, /<em>text<\/em>/, "markdown inside <details> still renders")
+  assert.match(html, /<kbd>Ctrl<\/kbd>/)
+  assert.match(html, /<sub>2<\/sub>/)
+  assert.match(html, /<sup>2<\/sup>/)
+  // the allowlist, not a free pass
+  assert.doesNotMatch(await r('<div style="position:fixed" onclick="x()">hi</div>'), /style=|onclick/)
+  const form = await r('<form action="/x"><input name="p" type="password"></form>')
+  assert.doesNotMatch(form, /<form|type="password"/, "no forms; an input survives only as a disabled checkbox")
+  assert.match(form, /<input[^>]*disabled[^>]*type="checkbox">/)
+  assert.doesNotMatch(await r("<style>body{display:none}</style>"), /<style/)
+}
+
 // --- headings get ids and an anchor ---------------------------------------
 const h = await r("## Getting a token")
 assert.match(h, /<h2 id="getting-a-token">/)
 assert.match(h, /class="heading-anchor"/)
 
 // --- GFM ---------------------------------------------------------------------
-assert.match(await r("| a | b |\n|---|---|\n| 1 | 2 |"), /<table>/)
+assert.match(await r("| a | b |\n|---|---|\n| 1 | 2 |"), /<div class="table-wrap"><table>/)
 assert.match(await r("- [x] done\n- [ ] todo"), /type="checkbox"/)
 
 // --- outline ---------------------------------------------------------------------

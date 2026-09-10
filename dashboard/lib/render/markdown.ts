@@ -3,7 +3,8 @@ import GithubSlugger from "github-slugger"
 import type { Element, ElementContent, Root, Text } from "hast"
 import type { Root as MdRoot, RootContent as MdNode } from "mdast"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
-import rehypeSanitize from "rehype-sanitize"
+import rehypeRaw from "rehype-raw"
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
 import rehypeSlug from "rehype-slug"
 import rehypeStringify from "rehype-stringify"
 import remarkGfm from "remark-gfm"
@@ -19,6 +20,8 @@ import {
 } from "@shikijs/transformers"
 import type { ShikiTransformer } from "shiki"
 import { unified } from "unified"
+
+import { stripComments } from "./comments"
 import { SKIP, visit } from "unist-util-visit"
 
 export interface RenderPage {
@@ -368,6 +371,52 @@ function rehypeCallouts() {
 }
 
 // ---------------------------------------------------------------------------
+// Tables sit in a scroll box so a wide one scrolls on a phone while a narrow
+// one still fills the column.
+function rehypeTableWrap() {
+  return (tree: Root) => {
+    visit(tree, "element", (node: Element, index, parent) => {
+      if (node.tagName !== "table" || !parent || index === undefined) return
+      parent.children[index] = {
+        type: "element",
+        tagName: "div",
+        properties: { className: ["table-wrap"] },
+        children: [node],
+      }
+      return SKIP
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ==highlight== (Obsidian) becomes <mark>. The text right inside the == must
+// not be a space, so "if a == b and c == d" in prose stays as it is. Never
+// inside code, and only within one text node.
+const HIGHLIGHT = /==(\S(?:[^\n]*?\S)?)==/g
+
+function rehypeHighlights() {
+  return (tree: Root) => {
+    visit(tree, "element", (node: Element) => {
+      if (["code", "pre", "kbd", "script", "style"].includes(node.tagName)) return SKIP
+      node.children = node.children.flatMap((child): ElementContent[] => {
+        if (child.type !== "text" || !child.value.includes("==")) return [child]
+        const out: ElementContent[] = []
+        let last = 0
+        for (const m of child.value.matchAll(HIGHLIGHT)) {
+          const at = m.index ?? 0
+          if (at > last) out.push({ type: "text", value: child.value.slice(last, at) })
+          out.push({ type: "element", tagName: "mark", properties: {}, children: [{ type: "text", value: m[1] }] })
+          last = at + m[0].length
+        }
+        if (!out.length) return [child]
+        if (last < child.value.length) out.push({ type: "text", value: child.value.slice(last) })
+        return out
+      })
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
 // ```mermaid fences become a diagram box holding the source as text. The
 // browser draws it (components/viewer/article.tsx); until then, or without
 // JS, the reader sees the source. Runs before Shiki so it is not highlighted.
@@ -479,17 +528,51 @@ function rehypeCodeBlocks() {
 }
 
 // ---------------------------------------------------------------------------
-// Raw HTML in the Markdown is dropped by remark-rehype (allowDangerousHtml is
-// off) and sanitize runs before any of our own transforms, so everything we
-// add after it is trusted markup and user input never gets to add attributes.
+// rehype-raw rebuilds the tree and drops `data`, which is where a fence's
+// meta (title="..." {2}) lives. Park it in an attribute across raw and
+// sanitize (which allows exactly that one on <code>), then put it back.
+function rehypeParkMeta() {
+  return (tree: Root) => {
+    visit(tree, "element", (node: Element) => {
+      const meta = (node.data as { meta?: string } | undefined)?.meta
+      if (node.tagName === "code" && meta) node.properties.dataMeta = meta
+    })
+  }
+}
+
+function rehypeRestoreMeta() {
+  return (tree: Root) => {
+    visit(tree, "element", (node: Element) => {
+      const meta = node.properties.dataMeta
+      if (node.tagName !== "code" || typeof meta !== "string") return
+      node.data = { ...node.data, meta }
+      delete node.properties.dataMeta
+    })
+  }
+}
+
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: { ...defaultSchema.attributes, code: [...(defaultSchema.attributes?.code ?? []), "dataMeta"] },
+}
+
+// ---------------------------------------------------------------------------
+// Raw HTML in the Markdown is parsed (rehype-raw) and then cut down by
+// rehype-sanitize's GitHub allowlist: <details>, <kbd>, <sub> and friends
+// survive; <script>, <iframe>, style and on* attributes do not. Sanitize runs
+// before any of our own transforms, so everything we add after it is
+// trusted markup and user input never gets to add attributes.
 export async function renderMarkdown(markdown: string, ctx: RenderContext): Promise<string> {
   const file = await unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkDollarGuard)
-    .use(remarkRehype)
-    .use(rehypeSanitize)
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeParkMeta)
+    .use(rehypeRaw)
+    .use(rehypeSanitize, sanitizeSchema)
+    .use(rehypeRestoreMeta)
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {
       behavior: "append",
@@ -503,10 +586,12 @@ export async function renderMarkdown(markdown: string, ctx: RenderContext): Prom
     .use(rehypeShiki, shikiOptions)
     .use(rehypeWikiLinks, ctx)
     .use(rehypeCallouts)
+    .use(rehypeHighlights)
+    .use(rehypeTableWrap)
     .use(rehypeCodeBlocks)
     .use(rehypeLinks, ctx)
     .use(rehypeStringify)
-    .process(markdown)
+    .process(stripComments(markdown))
   return String(file)
 }
 
@@ -528,7 +613,7 @@ export function clearRenderCache(): number {
 
 // Bump when the pipeline's output changes, so cached HTML from the old
 // pipeline is never served.
-const RENDER_VERSION = 6
+const RENDER_VERSION = 8
 
 export async function renderCached(
   pageKey: string,

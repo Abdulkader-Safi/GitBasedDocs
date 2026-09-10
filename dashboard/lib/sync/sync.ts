@@ -7,6 +7,7 @@ import { docPages, projects, repoConnections, syncLogs } from "@/lib/db/schema"
 import { GitHubError, gh } from "@/lib/github/client"
 import { getConnection } from "@/lib/github/connection"
 import { mimeFor, syncAssets, type WantedAsset } from "@/lib/sync/assets"
+import { stripComments } from "@/lib/render/comments"
 
 export type SyncTrigger = "webhook" | "manual" | "cron"
 
@@ -328,14 +329,17 @@ async function doSync(trigger: SyncTrigger): Promise<SyncResult> {
 
     const parsed = matter(raw)
     const data = parsed.data as Record<string, unknown>
+    // %% comments %% never reach the database, so they cannot be searched,
+    // rendered or shown in a snippet.
+    const body = stripComments(parsed.content)
     const row = {
       projectId: project.id,
       path: entry.path,
       slug: pageSlug(project.repoPath, entry.path),
-      title: titleFrom(data, parsed.content, entry.path),
+      title: titleFrom(data, body, entry.path),
       sortOrder: orderFrom(data),
-      excerpt: excerptFrom(parsed.content),
-      content: parsed.content,
+      excerpt: excerptFrom(body),
+      content: body,
       description: descriptionFrom(data),
       size: entry.size ?? Buffer.byteLength(raw),
       blobSha: entry.sha,

@@ -2,6 +2,8 @@
 
 The content repo is an Obsidian vault that also lives on GitHub, so writers expect what renders in both places. This list ranks the ten extensions that matter most for a private docs site, says which we already had, and records what we picked for each.
 
+Status (2026-09-10): all ten are live. The table's middle column records what we had before this work.
+
 Ranking rule: how often it shows up in real docs, times how badly the page breaks without it. A diagram that shows as raw text is a broken page. A missing emoji is not.
 
 | # | Extension | Syntax | Status before | Pick |

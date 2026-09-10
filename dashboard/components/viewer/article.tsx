@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react"
 
 // `html` must come from renderMarkdown/renderCached, never from anywhere
-// else: that pipeline drops raw HTML and runs rehype-sanitize before any of
-// our own transforms (see lib/render/markdown.check.ts for the injection
-// cases). Copy buttons in it are plain markup; one delegated listener wires
+// else: that pipeline runs raw HTML through rehype-sanitize's allowlist
+// before any of our own transforms (see lib/render/markdown.check.ts for
+// the injection cases). Copy buttons in it are plain markup; one delegated listener wires
 // them up.
 export function Article({ html, highlight = "" }: { html: string; highlight?: string }) {
   const ref = useRef<HTMLDivElement>(null)
